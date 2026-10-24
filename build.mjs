@@ -21,7 +21,7 @@ const PROJECT = {
   kofi: 'anonacondacodelab', // Ko-fi username; leave empty to hide the support link
   // Android app announced on the website: the install page (dist/android.html) and the manual's [[android]] parts.
   // Off until the Android app is launched; the APK itself is built either way.
-  androidPage: false
+  androidPage: true
 };
 const APP = { APP_NAME: PROJECT.name, VERSION: pkg.version };
 const appUrl = /^https:\/\/[\w.-]+\/?$/.test(PROJECT.appUrl) ? PROJECT.appUrl.replace(/\/$/, '') : '';

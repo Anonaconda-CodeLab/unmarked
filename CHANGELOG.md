@@ -8,6 +8,8 @@
 - Lossless for photos: the picture data is copied unchanged. Rotation and colour profile are kept.
 - Options: keep the date taken, keep copyright notices, give files plain names.
 - Every clean copy is checked again before it is offered for saving.
+- Start screen: everyday reasons to use it, and what it can't remove, with a plain no-warranty notice.
+- Free, with no ads or tracking: a Ko-fi link in About, and a gentle request after 20, 50 and 100 uses.
 - Android app: saving opens the folder the original came from, suggesting a name like `photo-unmarked.jpg` so the
   original can't be replaced by accident (otherwise the folder used last time). Files are opened with Android's own
   file picker, which grants access to the chosen files only.
