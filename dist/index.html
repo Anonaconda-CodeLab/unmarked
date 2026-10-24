@@ -1290,13 +1290,14 @@ if (NATIVE) (() => {
   $('fileInput').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
   // Where possible, files are opened with the system's own picker instead of the upload box: the upload box hides which
   // folder a file came from, the system picker doesn't, so the clean copy can be saved back next to the original.
+  const topLevel = (() => { try { return window.self === window.top; } catch (e) { return false; } })();
   const OPEN_TYPES = [{ description: 'Photos and PDFs', accept: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'], 'image/webp': ['.webp'], 'application/pdf': ['.pdf'], 'image/heic': ['.heic', '.heif'] } }];
   $('fileInput').addEventListener('click', async e => {
     if (NATIVE) {
       e.preventDefault();
       try { const got = await UnmarkedNative.pickFiles(); if (got.length) await addFiles(got); }
       catch (err) { toast('Could not open the files: ' + (err && err.message || err)); }
-    } else if (typeof window.showOpenFilePicker === 'function') {
+    } else if (typeof window.showOpenFilePicker === 'function' && topLevel) {   // browsers block it inside frames: use the upload box there
       e.preventDefault();
       let hs;
       try { hs = await window.showOpenFilePicker({ multiple: true, id: 'unmarked-files', types: OPEN_TYPES }); }
