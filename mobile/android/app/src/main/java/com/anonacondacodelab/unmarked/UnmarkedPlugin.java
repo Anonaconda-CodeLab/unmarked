@@ -11,6 +11,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.DocumentsContract;
+import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.util.Base64;
 import androidx.activity.result.ActivityResult;
@@ -79,27 +80,58 @@ public class UnmarkedPlugin extends Plugin {
     @PluginMethod
     public void getShared(PluginCall call) {
         JSArray files = new JSArray();
+        synchronized (shared) { for (int i = 0; i < shared.size(); i++) files.put(describe(i, shared.get(i))); }
+        JSObject r = new JSObject();
+        r.put("files", files);
+        call.resolve(r);
+    }
+
+    private JSObject describe(int i, Uri u) {
         ContentResolver cr = getContext().getContentResolver();
-        synchronized (shared) {
-            for (int i = 0; i < shared.size(); i++) {
-                Uri u = shared.get(i);
-                JSObject f = new JSObject();
-                f.put("id", i);
-                String name = null; long size = -1;
-                try (Cursor c = cr.query(u, new String[] { OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE }, null, null, null)) {
-                    if (c != null && c.moveToFirst()) {
-                        int n = c.getColumnIndex(OpenableColumns.DISPLAY_NAME), s = c.getColumnIndex(OpenableColumns.SIZE);
-                        if (n >= 0) name = c.getString(n);
-                        if (s >= 0 && !c.isNull(s)) size = c.getLong(s);
-                    }
-                } catch (Exception ignored) { }
-                if (name == null) name = u.getLastPathSegment();
-                f.put("name", name != null ? name : "shared-file");
-                f.put("size", size);
-                String mime = null;
-                try { mime = cr.getType(u); } catch (Exception ignored) { }
-                f.put("mime", mime != null ? mime : "");
-                files.put(f);
+        JSObject f = new JSObject();
+        f.put("id", i);
+        String name = null; long size = -1;
+        try (Cursor c = cr.query(u, new String[] { OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE }, null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                int n = c.getColumnIndex(OpenableColumns.DISPLAY_NAME), s = c.getColumnIndex(OpenableColumns.SIZE);
+                if (n >= 0) name = c.getString(n);
+                if (s >= 0 && !c.isNull(s)) size = c.getLong(s);
+            }
+        } catch (Exception ignored) { }
+        if (name == null) name = u.getLastPathSegment();
+        f.put("name", name != null ? name : "shared-file");
+        f.put("size", size);
+        String mime = null;
+        try { mime = cr.getType(u); } catch (Exception ignored) { }
+        f.put("mime", mime != null ? mime : "");
+        f.put("uri", u.toString());   // where it came from: lets the save screen open in the same folder
+        return f;
+    }
+
+    /* Android's own file picker. Unlike the WebView's upload box it reports where each file is. It grants read access
+       to the chosen files only, for as long as the app is open; no storage permission is needed. */
+    @PluginMethod
+    public void pickFiles(PluginCall call) {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("*/*");
+        i.putExtra(Intent.EXTRA_MIME_TYPES, new String[] { "image/*", "application/pdf" });
+        i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        startActivityForResult(call, i, "pickFilesResult");
+    }
+
+    @ActivityCallback
+    private void pickFilesResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        JSArray files = new JSArray();
+        Intent data = result.getData();
+        if (result.getResultCode() == Activity.RESULT_OK && data != null) {
+            List<Uri> got = new ArrayList<>();
+            ClipData clip = data.getClipData();
+            if (clip != null) { for (int k = 0; k < clip.getItemCount(); k++) { Uri u = clip.getItemAt(k).getUri(); if (u != null) got.add(u); } }
+            else if (data.getData() != null) got.add(data.getData());
+            synchronized (shared) {
+                for (Uri u : got) { shared.add(u); files.put(describe(shared.size() - 1, u)); }
             }
         }
         JSObject r = new JSObject();
@@ -160,9 +192,11 @@ public class UnmarkedPlugin extends Plugin {
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType(call.getString("mime", "application/octet-stream"));
         i.putExtra(Intent.EXTRA_TITLE, call.getString("name", "unmarked-file"));
-        // open in the folder used last time (Android 8+; the screen falls back to its own default if it's gone)
-        String last = prefs().getString("lastSaveUri", null);
-        if (last != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) i.putExtra(DocumentsContract.EXTRA_INITIAL_URI, Uri.parse(last));
+        // open in the original file's folder, else the folder used last time (Android 8+; only a hint: the screen falls
+        // back to its own default if the place is gone or can't be shown)
+        Uri start = documentUri(call.getString("startIn", ""));
+        if (start == null) { String last = prefs().getString("lastSaveUri", null); if (last != null) start = Uri.parse(last); }
+        if (start != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) i.putExtra(DocumentsContract.EXTRA_INITIAL_URI, start);
         startActivityForResult(call, i, "pickSaveLocationResult");
     }
 
@@ -175,6 +209,18 @@ public class UnmarkedPlugin extends Plugin {
         if (ok) prefs().edit().putString("lastSaveUri", uri.toString()).apply();   // remembered on this phone only
         r.put("uri", ok ? uri.toString() : "");
         call.resolve(r);
+    }
+
+    /* The save screen understands document addresses. Files from the file picker already have one; photos shared from the
+       gallery have a media address, which Android 10+ can translate. Anything else: no hint. */
+    private Uri documentUri(String s) {
+        if (s == null || s.isEmpty()) return null;
+        try {
+            Uri u = Uri.parse(s);
+            if (DocumentsContract.isDocumentUri(getContext(), u)) return u;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && MediaStore.AUTHORITY.equals(u.getAuthority())) return MediaStore.getDocumentUri(getContext(), u);
+        } catch (Exception ignored) { }
+        return null;
     }
 
     private SharedPreferences prefs() { return getContext().getSharedPreferences("unmarked", Context.MODE_PRIVATE); }

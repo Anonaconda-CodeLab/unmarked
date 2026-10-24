@@ -12,8 +12,8 @@ const toB64 = u => { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s +=
 const fromB64 = s => { const b = atob(s || ''), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
 const UnmarkedNative = NATIVE ? {
   // pick the place first (name only: Android limits what a pending call may carry), then write in pieces
-  async saveFile(name, bytes, mime) {
-    const r = await nativeCall('Unmarked', 'pickSaveLocation', { name, mime: mime || 'application/octet-stream' });
+  async saveFile(name, bytes, mime, startIn) {   // startIn: the original file's address, to open its folder
+    const r = await nativeCall('Unmarked', 'pickSaveLocation', { name, mime: mime || 'application/octet-stream', startIn: startIn || '' });
     if (!r || !r.uri) return { saved: false };
     for (let i = 0; i === 0 || i < bytes.length; i += CHUNK)
       await nativeCall('Unmarked', 'writeChunk', { uri: r.uri, data: toB64(bytes.subarray(i, i + CHUNK)), first: i === 0, last: i + CHUNK >= bytes.length });
@@ -27,11 +27,10 @@ const UnmarkedNative = NATIVE ? {
         await nativeCall('Unmarked', 'shareChunk', { index: k, name: f.name, data: toB64(f.bytes.subarray(i, i + CHUNK)), first: i === 0, last: i + CHUNK >= f.bytes.length });
     await nativeCall('Unmarked', 'shareSend', { count: files.length, mimes: files.map(f => f.mime || 'application/octet-stream') });
   },
-  // files shared to Unmarked from another app ("Share → Unmarked")
-  async takeShared() {
-    const r = await nativeCall('Unmarked', 'getShared');
+  // read files the native side holds (picked or shared) in pieces; each keeps its address so the clean copy can be saved next to it
+  async readHeld(list) {
     const out = [];
-    for (const it of (r && r.files) || []) {
+    for (const it of list || []) {
       const parts = []; let offset = 0;
       for (;;) {
         const c = await nativeCall('Unmarked', 'readShared', { id: it.id, offset, length: CHUNK });
@@ -39,11 +38,15 @@ const UnmarkedNative = NATIVE ? {
         if (!c || c.eof || !u.length) break;
       }
       const bytes = new Uint8Array(offset); let o = 0; for (const p of parts) { bytes.set(p, o); o += p.length; }
-      out.push({ name: it.name || 'shared-file', bytes });
+      out.push({ name: it.name || 'file', bytes, source: it.uri || '' });
     }
     await nativeCall('Unmarked', 'clearShared').catch(() => {});
     return out;
   },
+  // files shared to Unmarked from another app ("Share → Unmarked")
+  async takeShared() { const r = await nativeCall('Unmarked', 'getShared'); return this.readHeld(r && r.files); },
+  // Android's own file picker (it tells the app where each file is, unlike the WebView's upload box)
+  async pickFiles() { const r = await nativeCall('Unmarked', 'pickFiles'); return this.readHeld(r && r.files); },
   onShared: cb => nativeOn('Unmarked', 'shared', cb),
   openUrl: url => nativeCall('Unmarked', 'openUrl', { url })
 } : null;

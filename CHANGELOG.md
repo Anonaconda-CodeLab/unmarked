@@ -8,5 +8,7 @@
 - Lossless for photos: the picture data is copied unchanged. Rotation and colour profile are kept.
 - Options: keep the date taken, keep copyright notices, give files plain names.
 - Every clean copy is checked again before it is offered for saving.
-- Saving opens the folder you saved to last time (Android app, and Chrome, Edge and other Chromium browsers on a computer).
+- Saving opens the folder the original came from, suggesting a name like `photo-unmarked.jpg` so the original can't be
+  replaced by accident; otherwise the folder used last time (Android app, and Chrome, Edge and other Chromium browsers
+  on a computer). Files are opened with the system's own file picker there, which grants access to the chosen files only.
 - Android app: Share → Unmarked from any app, saving and sharing through Android's own screens, no internet permission.
