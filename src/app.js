@@ -60,14 +60,14 @@
     let skipped = 0;
     for (const it of list) {
       if (state.files.length >= MAX_FILES) { skipped++; continue; }
-      // an item is a File; { file, handle } from the browser's file picker; or { name, bytes, source } from the Android app.
-      // handle / source say which folder the file came from, so its clean copy can be saved back there.
-      const item = it instanceof Blob ? it : it.file || it;
+      // an item is a File (browser), or { name, bytes, source } from the Android app, where source is the file's address
+      // so its clean copy can be saved back in the same folder
+      const item = it instanceof Blob ? it : it;
       const name = item.name || it.name || 'file', bytesIn = item instanceof Blob ? null : it.bytes;
       const sz = bytesIn ? bytesIn.length : item.size;
       if (sz > MAX_BYTES) { toast(`${name} is too large (over ${size(MAX_BYTES)}).`); continue; }
       const f = { id: ++state.seq, name, size: sz, bytes: null, det: null, insp: null, nameF: C.nameFindings(name), pdf: { attachments: true, scripts: true, comments: true }, out: null, url: null, li: null, error: '',
-        handle: it.handle || null, source: it.source || '' };
+        source: it.source || '' };
       state.files.push(f);
       render(f);
       try {
@@ -87,36 +87,17 @@
     updateActions();
   }
   $('fileInput').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
-  // Where possible, files are opened with the system's own picker instead of the upload box: the upload box hides which
-  // folder a file came from, the system picker doesn't, so the clean copy can be saved back next to the original.
-  const topLevel = (() => { try { return window.self === window.top; } catch (e) { return false; } })();
-  const OPEN_TYPES = [{ description: 'Photos and PDFs', accept: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'], 'image/webp': ['.webp'], 'application/pdf': ['.pdf'], 'image/heic': ['.heic', '.heif'] } }];
-  $('fileInput').addEventListener('click', async e => {
-    if (NATIVE) {
-      e.preventDefault();
-      try { const got = await UnmarkedNative.pickFiles(); if (got.length) await addFiles(got); }
-      catch (err) { toast('Could not open the files: ' + (err && err.message || err)); }
-    } else if (typeof window.showOpenFilePicker === 'function' && topLevel) {   // browsers block it inside frames: use the upload box there
-      e.preventDefault();
-      let hs;
-      try { hs = await window.showOpenFilePicker({ multiple: true, id: 'unmarked-files', types: OPEN_TYPES }); }
-      catch (err) { if (!err || err.name !== 'AbortError') toast('Could not open the files: ' + (err && err.message || err)); return; }
-      addFiles(await Promise.all(hs.map(async h => ({ file: await h.getFile(), handle: h }))));
-    }
+  // In the Android app, files are opened with Android's own picker instead of the WebView's upload box: it reports
+  // which folder each file came from, so the clean copy can be saved back next to the original.
+  if (NATIVE) $('fileInput').addEventListener('click', async e => {
+    e.preventDefault();
+    try { const got = await UnmarkedNative.pickFiles(); if (got.length) await addFiles(got); }
+    catch (err) { toast('Could not open the files: ' + (err && err.message || err)); }
   });
   const drop = $('drop');
   document.addEventListener('dragover', e => { if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) { e.preventDefault(); drop.classList.add('over'); } });
   document.addEventListener('dragleave', e => { if (!e.relatedTarget) drop.classList.remove('over'); });
-  document.addEventListener('drop', async e => {
-    if (!e.dataTransfer || !e.dataTransfer.files.length) return;
-    e.preventDefault(); drop.classList.remove('over'); show('scrHome');
-    const files = Array.from(e.dataTransfer.files);
-    // dropped files carry a handle too in Chromium browsers (it must be asked for before the drop event ends)
-    const items = Array.from(e.dataTransfer.items || []).filter(i => i.kind === 'file');
-    const hp = items.length === files.length && typeof items[0].getAsFileSystemHandle === 'function' ? items.map(i => i.getAsFileSystemHandle().catch(() => null)) : null;
-    const handles = hp ? await Promise.all(hp) : [];
-    addFiles(files.map((file, i) => ({ file, handle: handles[i] && handles[i].kind === 'file' ? handles[i] : null })));
-  });
+  document.addEventListener('drop', e => { if (!e.dataTransfer || !e.dataTransfer.files.length) return; e.preventDefault(); drop.classList.remove('over'); show('scrHome'); addFiles(e.dataTransfer.files); });
 
   function removeFile(f) {
     if (state.phase === 'cleaning') return;
@@ -290,25 +271,16 @@
   }
   async function saveFiles(list) {
     const files = outFiles(list); if (!files.length) return;
-    const from = list.find(f => f.out && (f.handle || f.source)) || {};   // the original's folder (the first file's, for a zip)
+    const from = list.find(f => f.out && f.source) || {};   // Android: the original's folder (the first file's, for a zip)
     const one = files.length === 1;
     let name = one ? files[0].name : 'unmarked-files.zip';
     // saving next to the original under the same name would offer to replace it: suggest "photo-unmarked.jpg" instead
     const orig = one ? list.find(f => f.out && f.out.name === files[0].name) : null;
-    if (orig && (orig.handle || orig.source) && name.toLowerCase() === orig.name.toLowerCase()) name = name.replace(/(\.[^.]+)?$/, m => '-unmarked' + m);
+    if (orig && orig.source && name.toLowerCase() === orig.name.toLowerCase()) name = name.replace(/(\.[^.]+)?$/, m => '-unmarked' + m);
     const bytes = one ? files[0].bytes : C.zip(files), mime = one ? files[0].mime : 'application/zip';
     try {
       if (NATIVE) { const r = await UnmarkedNative.saveFile(name, bytes, mime, from.source); if (r.saved) toast('Saved.'); }
-      else if (typeof window.showSaveFilePicker === 'function') {
-        // desktop Chromium browsers: a "save as" dialog that reopens the folder used last time (remembered by the id)
-        const ext = (/\.[A-Za-z0-9]{1,5}$/.exec(name) || [''])[0].toLowerCase();
-        let h;
-        const where = from.handle ? { startIn: from.handle } : { id: 'unmarked-save' };   // the original's folder, else the last one used
-        try { h = await window.showSaveFilePicker(Object.assign({ suggestedName: name, types: ext ? [{ description: 'Clean copy', accept: { [mime]: [ext] } }] : undefined }, where)); }
-        catch (e) { if (e && e.name === 'AbortError') return; download(name, bytes, mime); return; }   // dialog refused (e.g. blocked by the browser): plain download
-        const w = await h.createWritable(); await w.write(bytes); await w.close();
-        toast('Saved.');
-      } else download(name, bytes, mime);   // other browsers save to their usual download folder
+      else download(name, bytes, mime);   // browsers save to their usual download folder
     } catch (e) { if (!e || e.name !== 'AbortError') toast('Could not save: ' + (e && e.message || e)); }
   }
   const webShareOk = () => { try { return !!(navigator.canShare && navigator.canShare({ files: [new File([new Uint8Array(1)], 'x.jpg', { type: 'image/jpeg' })] })); } catch (e) { return false; } };
