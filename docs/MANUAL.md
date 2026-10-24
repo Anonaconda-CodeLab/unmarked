@@ -21,11 +21,16 @@ files are never uploaded anywhere.
 3. Choose any **options** (below), then tap **Remove hidden data**.
 4. Each clean copy is **checked again** to confirm nothing was left behind.
 5. **Save** or **Share** the clean copies. Several files can be saved together as one `.zip` file.
+[[android]]
    In the Android app the save screen opens in the **same folder as the original**, and suggests a name like
-   `photo-unmarked.jpg` so you can't replace your original by accident. Browsers save to their usual download folder.
+   `photo-unmarked.jpg` so you can't replace your original by accident.
+[[/android]]
+   Browsers save to their usual download folder.
+[[android]]
 
 On Android you can also start from another app: in your gallery or file manager, pick photos or PDFs, tap **Share**
 and choose **Unmarked**.
+[[/android]]
 
 ## Options
 
@@ -97,15 +102,17 @@ Kept: the text, pictures and layout, links, form fields and their answers, and l
 
 ## Privacy
 
-Unmarked has no server, no account and no tracking. The web app blocks every network connection, and the Android app
-has no internet permission, so it couldn't send your files anywhere even if it tried. The only things remembered on
+Unmarked has no server, no account and no tracking. The web app blocks every network connection[[android]], and the Android app
+has no internet permission[[/android]], so it couldn't send your files anywhere even if it tried. The only things remembered on
 your device are your three option settings.
 
+[[android]]
 ## The Android app
 
 The Android app is the same app with two extras: **Share → Unmarked** from any app, and saving and sharing through
 Android's own screens. Download it from https://unmarked.anonacondacodelab.com/android.html (not from Google Play;
 that page explains why). **About → Check for updates** tells you when a new version is out.
+[[/android]]
 
 ## No guarantee
 

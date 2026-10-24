@@ -4,7 +4,7 @@
 // with a strict Content Security Policy that blocks every network request.
 //   node build.mjs              -> dist/index.html
 //   node build.mjs --fragment   -> dist/fragment.html (page body only, for embedding/preview hosts)
-import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,7 +18,10 @@ const PROJECT = {
   contact: 'hello@anonacondacodelab.com', // support address shown in About and the manual; leave empty to hide
   // SHA-256 of the Android signing certificate (the studio's shared key), published so people can check an APK is official
   certSha256: '4D:6C:EA:58:94:C0:D7:D8:E9:AB:74:BC:3A:1E:9C:A5:47:BD:40:A2:02:B6:70:99:AF:66:5B:29:7F:7A:8F:47',
-  kofi: 'anonacondacodelab' // Ko-fi username; leave empty to hide the support link
+  kofi: 'anonacondacodelab', // Ko-fi username; leave empty to hide the support link
+  // Android app announced on the website: the install page (dist/android.html) and the manual's [[android]] parts.
+  // Off until the Android app is launched; the APK itself is built either way.
+  androidPage: false
 };
 const APP = { APP_NAME: PROJECT.name, VERSION: pkg.version };
 const appUrl = /^https:\/\/[\w.-]+\/?$/.test(PROJECT.appUrl) ? PROJECT.appUrl.replace(/\/$/, '') : '';
@@ -33,7 +36,7 @@ const about = `<div class="card" id="aboutCard">
       <div><div class="dev-name">About ${APP.APP_NAME}</div><div class="dev-meta">Version ${APP.VERSION}${BUILD ? ` · build ${BUILD}` : ''} · free and open source (GNU GPL v3) · runs entirely on this device</div></div>
       <p class="dev-meta" style="margin:0">© 2026 Anonaconda Code Lab. You may use, share and modify this app under the GNU General Public License v3 or later; it comes with no warranty.</p>
       ${contact ? `<p class="dev-meta" style="margin:0">Questions or problems: <a href="mailto:${contact}">${contact}</a>. A description or a screenshot is usually enough; please don't send the files you were cleaning.</p>` : ''}
-      <div class="acts-row"><button id="btnHelp2" class="btn">User manual</button>${appUrl ? `<a class="btn native-only" href="${appUrl}/android.html?v=${APP.VERSION}" target="_blank" rel="noopener noreferrer">Check for updates</a>` : ''}${repo ? `<a class="btn" href="${repo}" target="_blank" rel="noopener noreferrer">Source code</a>` : ''}${kofi ? `<a class="btn coffee" href="${kofi}" target="_blank" rel="noopener noreferrer">☕ Support on Ko-fi</a>` : ''}</div>
+      <div class="acts-row"><button id="btnHelp2" class="btn">User manual</button>${appUrl && PROJECT.androidPage ? `<a class="btn native-only" href="${appUrl}/android.html?v=${APP.VERSION}" target="_blank" rel="noopener noreferrer">Check for updates</a>` : ''}${repo ? `<a class="btn" href="${repo}" target="_blank" rel="noopener noreferrer">Source code</a>` : ''}${kofi ? `<a class="btn coffee" href="${kofi}" target="_blank" rel="noopener noreferrer">☕ Support on Ko-fi</a>` : ''}</div>
     </div>`;
 
 const src = f => readFileSync(join(root, 'src', f), 'utf8');
@@ -64,7 +67,11 @@ function md(text) {
   }
   flushP(); flushL(); flushQ(); return out.join('\n');
 }
-const manual = md(readFileSync(join(root, 'docs', 'MANUAL.md'), 'utf8'));
+// [[android]] ... [[/android]] in the manual: kept (markers removed) when the Android app is announced, else left out
+const manualText = readFileSync(join(root, 'docs', 'MANUAL.md'), 'utf8')
+  .replace(/\[\[android\]\]\n?([\s\S]*?)\[\[\/android\]\]\n?/g, (_, body) => PROJECT.androidPage ? body : '');
+if (/\[\[\/?android\]\]/.test(manualText)) throw new Error('Unbalanced [[android]] marker in docs/MANUAL.md');
+const manual = md(manualText);
 const b64 = f => readFileSync(join(root, 'src', 'fonts', f)).toString('base64');
 const fill = s => s.replace(/\{\{(APP_NAME|VERSION|APP_URL|APP_HOST)\}\}/g, (_, k) => APP[k]).replace('{{ABOUT}}', about).replace('{{MANUAL}}', () => manual);
 
@@ -143,7 +150,8 @@ if (!fragment) {
     ]
   }, null, 2) + '\n');
   // the Android download page (also the target of the app's Check for updates button: android.html?v=<installed version>)
-  writeFileSync(join(root, 'dist', 'android.html'), src('android.html').replace(/\{\{(VERSION|REPO|CERT|CONTACT_LINE|APP_NAME|APP_URL)\}\}/g, (_, k) =>
+  if (!PROJECT.androidPage) rmSync(join(root, 'dist', 'android.html'), { force: true });
+  else writeFileSync(join(root, 'dist', 'android.html'), src('android.html').replace(/\{\{(VERSION|REPO|CERT|CONTACT_LINE|APP_NAME|APP_URL)\}\}/g, (_, k) =>
     ({ VERSION: APP.VERSION, REPO: repo, CERT: PROJECT.certSha256, APP_NAME: APP.APP_NAME, APP_URL: appUrl || '',
        CONTACT_LINE: contact ? ` · Questions or problems: <a href="mailto:${contact}">${contact}</a>` : '' })[k]));
   if (appUrl) {
@@ -154,8 +162,7 @@ if (!fragment) {
     writeFileSync(smFile, `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>${appUrl}/</loc><lastmod>${keep ? keep[1] : new Date().toISOString().slice(0, 10)}</lastmod></url>
-  <url><loc>${appUrl}/android.html</loc></url>
-</urlset>
+${PROJECT.androidPage ? `  <url><loc>${appUrl}/android.html</loc></url>\n` : ''}</urlset>
 `);
   }
 }

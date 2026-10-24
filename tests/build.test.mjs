@@ -2,7 +2,7 @@
 // Checks the built page (run after `node build.mjs`): no network, everything inlined, settings filled in.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 const dist = f => readFileSync(new URL('../dist/' + f, import.meta.url), 'utf8');
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
@@ -28,9 +28,19 @@ test('page contains the app, pdf-lib and the manual, with placeholders filled', 
 });
 
 test('Android page and manifest', () => {
-  const a = dist('android.html');
-  assert.ok(a.includes(`Unmarked-${pkg.version}.apk`));
-  assert.ok(!/\{\{[A-Z_]+\}\}/.test(a));
+  const on = /androidPage:\s*true/.test(readFileSync(new URL('../build.mjs', import.meta.url), 'utf8'));
+  const html = dist('index.html'), sitemap = dist('sitemap.xml');
+  assert.ok(!/\[\[\/?android\]\]/.test(html), 'manual markers removed');
+  if (on) {
+    const a = dist('android.html');
+    assert.ok(a.includes(`Unmarked-${pkg.version}.apk`));
+    assert.ok(!/\{\{[A-Z_]+\}\}/.test(a));
+    assert.ok(sitemap.includes('android.html'));
+  } else {   // not announced yet: no install page, and the website says nothing about an Android app
+    assert.ok(!existsSync(new URL('../dist/android.html', import.meta.url)));
+    assert.ok(!sitemap.includes('android.html'));
+    assert.ok(!/android\.html|Android app/.test(html.replace(/<script>\s*!function\(t,e\)[\s\S]*?<\/script>/, '').replace(/<script>[\s\S]*<\/script>/, '')), 'no Android app in the page text');
+  }
   const m = JSON.parse(dist('manifest.webmanifest'));
   assert.equal(m.name, 'Unmarked');
   assert.ok(m.icons.some(i => i.purpose === 'maskable'));
