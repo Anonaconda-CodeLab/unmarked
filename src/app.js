@@ -202,6 +202,7 @@
     const any = state.files.length > 0, ready = state.files.filter(f => f.insp && !f.error);
     const checking = state.files.some(f => !f.error && !f.insp);
     $('intro').hidden = any;
+    $('uses').hidden = any;   // examples are for newcomers: out of the way once files are added
     drop.classList.toggle('compact', any);
     $('dropMain').textContent = any ? 'Add more files' : 'Choose photos or PDFs';
     drop.hidden = state.phase === 'cleaning';

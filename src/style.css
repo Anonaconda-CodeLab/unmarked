@@ -128,6 +128,7 @@ code{font-family:var(--f-mono);font-size:.86em;background:var(--surface-2);borde
 .row-btn .chev{color:var(--muted)}
 .btn.coffee{background:var(--surface);border-color:var(--accent);color:var(--fg)}
 html:not(.native) .native-only{display:none}
+.uses ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .limits{border-color:color-mix(in srgb,var(--med) 45%,var(--line))}
 .limits-title{margin:0;font-size:16px;font-weight:700}
 .limits ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}

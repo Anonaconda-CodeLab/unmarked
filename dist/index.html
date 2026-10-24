@@ -157,6 +157,7 @@ code{font-family:var(--f-mono);font-size:.86em;background:var(--surface-2);borde
 .row-btn .chev{color:var(--muted)}
 .btn.coffee{background:var(--surface);border-color:var(--accent);color:var(--fg)}
 html:not(.native) .native-only{display:none}
+.uses ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .limits{border-color:color-mix(in srgb,var(--med) 45%,var(--line))}
 .limits-title{margin:0;font-size:16px;font-weight:700}
 .limits ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
@@ -226,6 +227,19 @@ html:not(.native) .native-only{display:none}
       <p class="hint" id="saveHint"></p>
     </div>
 
+    <div class="card uses" id="uses">
+      <h2 class="limits-title">Why use it</h2>
+      <ul>
+        <li><b>Selling something online.</b> A photo of the item, taken at home, can show exactly where you live.</li>
+        <li><b>Photos of your children.</b> Pictures taken at home, school or the park can reveal where they spend their days.</li>
+        <li><b>Sending files, not posting them.</b> Big social networks usually remove hidden data, but email, cloud links, “send as file” in chat apps, and many forums and marketplaces pass it on untouched.</li>
+        <li><b>Documents for a landlord, employer or school.</b> A PDF can carry your name, the computer it was made on, comments, and earlier versions with text you deleted.</li>
+        <li><b>Job applications.</b> A CV made from an old template can still carry a previous author's name or your current employer's.</li>
+        <li><b>Meeting people online.</b> Photos for a dating profile or a new contact can give away your home or workplace.</li>
+        <li><b>Reporting something anonymously.</b> A photo or document can say which phone or computer made it, and who owns it.</li>
+      </ul>
+    </div>
+
     <div class="card limits" id="limits">
       <h2 class="limits-title">What Unmarked can't remove</h2>
       <ul>
@@ -259,6 +273,8 @@ html:not(.native) .native-only{display:none}
 <p>Photos and documents carry information you can't see on screen. A photo from a phone usually records <b>where it was taken</b> (often to within a few metres), <b>when</b>, <b>which phone</b> took it, and sometimes the <b>owner's name</b> and the camera's <b>serial number</b>. A PDF can carry the <b>author's name</b>, the app and computer that made it, <b>comments and who wrote them</b>, <b>attached files</b>, and even <b>earlier versions of the document</b> with text you thought you deleted.</p>
 <p>Unmarked shows you what's inside each file and makes a clean copy without it. It runs entirely on your device: your files are never uploaded anywhere.</p>
 <div class="callout"><p>Unmarked makes a <b>clean copy</b>. Your original file is not changed, and neither is your gallery or cloud backup. Share the clean copy, not the original.</p></div>
+<h2>Why use it</h2>
+<ul><li><b>Selling something online.</b> A photo of the item, taken at home, can show exactly where you live.</li><li><b>Photos of your children.</b> Pictures taken at home, school or the park can reveal where they spend their days.</li><li><b>Sending files, not posting them.</b> Big social networks usually remove hidden data, but email, cloud links, &quot;send as file&quot; in chat apps, and many forums and marketplaces pass it on untouched.</li><li><b>Documents for a landlord, employer or school.</b> A PDF can carry your name, the computer it was made on, comments, and earlier versions with text you deleted.</li><li><b>Job applications.</b> A CV made from an old template can still carry a previous author's name or your current employer's.</li><li><b>Meeting people online.</b> Photos for a dating profile or a new contact can give away your home or workplace.</li><li><b>Reporting something anonymously.</b> A photo or document can say which phone or computer made it, and who owns it.</li></ul>
 <h2>How to use it</h2>
 <ol><li>Tap <b>Choose photos or PDFs</b> (or drop files onto the page on a computer). You can pick many at once.</li><li>Each file is checked. Tap <b>What's inside</b> to see exactly what was found, from the most revealing to the most technical, and whether each item will be removed or kept.</li><li>Choose any <b>options</b> (below), then tap <b>Remove hidden data</b>.</li><li>Each clean copy is <b>checked again</b> to confirm nothing was left behind.</li><li><b>Save</b> or <b>Share</b> the clean copies. Several files can be saved together as one <code>.zip</code> file. Browsers save to their usual download folder.</li></ol>
 <h2>Options</h2>
@@ -1405,6 +1421,7 @@ if (NATIVE) (() => {
     const any = state.files.length > 0, ready = state.files.filter(f => f.insp && !f.error);
     const checking = state.files.some(f => !f.error && !f.insp);
     $('intro').hidden = any;
+    $('uses').hidden = any;   // examples are for newcomers: out of the way once files are added
     drop.classList.toggle('compact', any);
     $('dropMain').textContent = any ? 'Add more files' : 'Choose photos or PDFs';
     drop.hidden = state.phase === 'cleaning';

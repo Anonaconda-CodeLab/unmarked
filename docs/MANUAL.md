@@ -13,6 +13,16 @@ files are never uploaded anywhere.
 > Unmarked makes a **clean copy**. Your original file is not changed, and neither is your gallery or cloud backup.
 > Share the clean copy, not the original.
 
+## Why use it
+
+- **Selling something online.** A photo of the item, taken at home, can show exactly where you live.
+- **Photos of your children.** Pictures taken at home, school or the park can reveal where they spend their days.
+- **Sending files, not posting them.** Big social networks usually remove hidden data, but email, cloud links, "send as file" in chat apps, and many forums and marketplaces pass it on untouched.
+- **Documents for a landlord, employer or school.** A PDF can carry your name, the computer it was made on, comments, and earlier versions with text you deleted.
+- **Job applications.** A CV made from an old template can still carry a previous author's name or your current employer's.
+- **Meeting people online.** Photos for a dating profile or a new contact can give away your home or workplace.
+- **Reporting something anonymously.** A photo or document can say which phone or computer made it, and who owns it.
+
 ## How to use it
 
 1. Tap **Choose photos or PDFs** (or drop files onto the page on a computer). You can pick many at once.
