@@ -157,9 +157,11 @@ code{font-family:var(--f-mono);font-size:.86em;background:var(--surface-2);borde
 .row-btn .chev{color:var(--muted)}
 .btn.coffee{background:var(--surface);border-color:var(--accent);color:var(--fg)}
 html:not(.native) .native-only{display:none}
-details.tips{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px}
-details.tips summary{font-weight:600;cursor:pointer}
-details.tips ul{margin:10px 0 2px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.limits{border-color:color-mix(in srgb,var(--med) 45%,var(--line))}
+.limits-title{margin:0;font-size:16px;font-weight:700}
+.limits ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.as-is{margin:0;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.as-is b{color:var(--fg)}
 .manual{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:4px 18px 16px;font-size:15px;line-height:1.55}
 .manual h2{font-size:20px;font-stretch:85%;margin:22px 0 6px}
 .manual h3{font-size:16px;margin:16px 0 4px}
@@ -224,14 +226,15 @@ details.tips ul{margin:10px 0 2px;padding-left:20px;display:flex;flex-direction:
       <p class="hint" id="saveHint"></p>
     </div>
 
-    <details class="tips" id="tips">
-      <summary>What Unmarked can't remove</summary>
+    <div class="card limits" id="limits">
+      <h2 class="limits-title">What Unmarked can't remove</h2>
       <ul>
-        <li><b>What you can see.</b> Faces, street signs, house numbers, reflections and text in the picture or on the page stay as they are. Crop or cover them first.</li>
+        <li><b>What you can see.</b> Faces, street signs, house numbers, number plates, reflections and text in the picture or on the page stay as they are. Crop or cover them first.</li>
         <li><b>Your phone's own records.</b> Your gallery, cloud backups and the original file keep their data. Unmarked makes a clean copy; it doesn't change the original.</li>
         <li><b>Clues in the content itself.</b> Writing style, tracked changes already accepted into a document, or a scan's visible stamps and signatures.</li>
       </ul>
-    </details>
+      <p class="as-is"><b>No guarantee.</b> Unmarked is free software provided as it is, without any warranty. It removes the hidden data it knows about, but no tool can promise to find everything. Check the clean copy before you share anything sensitive. You are responsible for what you share, and Anonaconda Code Lab accepts no liability for any loss or harm from using this app.</p>
+    </div>
   </section>
 
   <!-- ABOUT -->
@@ -283,6 +286,8 @@ details.tips ul{margin:10px 0 2px;padding-left:20px;display:flex;flex-direction:
 <p>Unmarked has no server, no account and no tracking. The web app blocks every network connection, and the Android app has no internet permission, so it couldn't send your files anywhere even if it tried. The only things remembered on your device are your three option settings.</p>
 <h2>The Android app</h2>
 <p>The Android app is the same app with two extras: <b>Share → Unmarked</b> from any app, and saving and sharing through Android's own screens. Download it from <a href="https://unmarked.anonacondacodelab.com/android.html" target="_blank" rel="noopener noreferrer">unmarked.anonacondacodelab.com/android.html</a> (not from Google Play; that page explains why). <b>About → Check for updates</b> tells you when a new version is out.</p>
+<h2>No guarantee</h2>
+<div class="callout"><p>Unmarked is free software, provided <b>as it is, without any warranty</b>. It removes the hidden data it knows about, but no tool can promise to find everything, and new phones and apps keep adding new kinds of data. Check the clean copy before you share anything sensitive. You are responsible for what you share; Anonaconda Code Lab accepts no liability for any loss or harm from using this app. The full terms are in the GNU General Public License v3.</p></div>
 <h2>Help</h2>
 <p>Unmarked is free and open source (GNU GPL v3), made by Anonaconda Code Lab. Questions or problems: hello@anonacondacodelab.com. Please don't send the files you were cleaning; a description is usually enough.</p></article>
   </section>

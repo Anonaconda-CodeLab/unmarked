@@ -41,6 +41,11 @@ Tests use real files in `tests/fixtures/`, made with ExifTool, Pillow, reportlab
 ### Hosting your own copy
 Host the `dist/` folder anywhere that serves https. Netlify deploys only when `dist/` changes (`netlify.toml`).
 
+## Disclaimer
+Unmarked is provided **as is, without any warranty**. It removes the hidden data it knows about, but no tool can
+promise to find everything. Check clean copies before sharing anything sensitive. You are responsible for what you
+share; Anonaconda Code Lab accepts no liability for any loss or harm from using this software.
+
 ## Licence
 Free software under the [GNU General Public License v3 or later](LICENSE), with no warranty. © 2026 Anonaconda Code Lab.
 Third-party components: see [NOTICE.md](NOTICE.md). Security and privacy: see [SECURITY.md](SECURITY.md).

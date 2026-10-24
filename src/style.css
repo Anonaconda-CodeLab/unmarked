@@ -128,9 +128,11 @@ code{font-family:var(--f-mono);font-size:.86em;background:var(--surface-2);borde
 .row-btn .chev{color:var(--muted)}
 .btn.coffee{background:var(--surface);border-color:var(--accent);color:var(--fg)}
 html:not(.native) .native-only{display:none}
-details.tips{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px}
-details.tips summary{font-weight:600;cursor:pointer}
-details.tips ul{margin:10px 0 2px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.limits{border-color:color-mix(in srgb,var(--med) 45%,var(--line))}
+.limits-title{margin:0;font-size:16px;font-weight:700}
+.limits ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.as-is{margin:0;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.as-is b{color:var(--fg)}
 .manual{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:4px 18px 16px;font-size:15px;line-height:1.55}
 .manual h2{font-size:20px;font-stretch:85%;margin:22px 0 6px}
 .manual h3{font-size:16px;margin:16px 0 4px}

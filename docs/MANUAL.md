@@ -107,6 +107,13 @@ The Android app is the same app with two extras: **Share → Unmarked** from any
 Android's own screens. Download it from https://unmarked.anonacondacodelab.com/android.html (not from Google Play;
 that page explains why). **About → Check for updates** tells you when a new version is out.
 
+## No guarantee
+
+> Unmarked is free software, provided **as it is, without any warranty**. It removes the hidden data it knows about,
+> but no tool can promise to find everything, and new phones and apps keep adding new kinds of data. Check the clean
+> copy before you share anything sensitive. You are responsible for what you share; Anonaconda Code Lab accepts no
+> liability for any loss or harm from using this app. The full terms are in the GNU General Public License v3.
+
 ## Help
 
 Unmarked is free and open source (GNU GPL v3), made by Anonaconda Code Lab. Questions or problems:
