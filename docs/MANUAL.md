@@ -21,6 +21,8 @@ files are never uploaded anywhere.
 3. Choose any **options** (below), then tap **Remove hidden data**.
 4. Each clean copy is **checked again** to confirm nothing was left behind.
 5. **Save** or **Share** the clean copies. Several files can be saved together as one `.zip` file.
+   The save screen opens in the folder you used last time (in the Android app, and in Chrome, Edge and similar
+   browsers on a computer; other browsers use their usual download folder).
 
 On Android you can also start from another app: in your gallery or file manager, pick photos or PDFs, tap **Share**
 and choose **Unmarked**.

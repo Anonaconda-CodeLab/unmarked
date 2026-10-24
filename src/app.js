@@ -264,8 +264,16 @@
     const bytes = one ? files[0].bytes : C.zip(files), mime = one ? files[0].mime : 'application/zip';
     try {
       if (NATIVE) { const r = await UnmarkedNative.saveFile(name, bytes, mime); if (r.saved) toast('Saved.'); }
-      else download(name, bytes, mime);
-    } catch (e) { toast('Could not save: ' + (e && e.message || e)); }
+      else if (typeof window.showSaveFilePicker === 'function') {
+        // desktop Chromium browsers: a "save as" dialog that reopens the folder used last time (remembered by the id)
+        const ext = (/\.[A-Za-z0-9]{1,5}$/.exec(name) || [''])[0].toLowerCase();
+        let h;
+        try { h = await window.showSaveFilePicker({ id: 'unmarked-save', suggestedName: name, types: ext ? [{ description: 'Clean copy', accept: { [mime]: [ext] } }] : undefined }); }
+        catch (e) { if (e && e.name === 'AbortError') return; download(name, bytes, mime); return; }   // dialog refused (e.g. blocked by the browser): plain download
+        const w = await h.createWritable(); await w.write(bytes); await w.close();
+        toast('Saved.');
+      } else download(name, bytes, mime);   // other browsers save to their usual download folder
+    } catch (e) { if (!e || e.name !== 'AbortError') toast('Could not save: ' + (e && e.message || e)); }
   }
   const webShareOk = () => { try { return !!(navigator.canShare && navigator.canShare({ files: [new File([new Uint8Array(1)], 'x.jpg', { type: 'image/jpeg' })] })); } catch (e) { return false; } };
   const canShare = () => NATIVE || webShareOk();

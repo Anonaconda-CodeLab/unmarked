@@ -4,9 +4,13 @@ package com.anonacondacodelab.unmarked;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
+import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.util.Base64;
 import androidx.activity.result.ActivityResult;
@@ -156,6 +160,9 @@ public class UnmarkedPlugin extends Plugin {
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType(call.getString("mime", "application/octet-stream"));
         i.putExtra(Intent.EXTRA_TITLE, call.getString("name", "unmarked-file"));
+        // open in the folder used last time (Android 8+; the screen falls back to its own default if it's gone)
+        String last = prefs().getString("lastSaveUri", null);
+        if (last != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) i.putExtra(DocumentsContract.EXTRA_INITIAL_URI, Uri.parse(last));
         startActivityForResult(call, i, "pickSaveLocationResult");
     }
 
@@ -164,9 +171,13 @@ public class UnmarkedPlugin extends Plugin {
         if (call == null) return;
         JSObject r = new JSObject();
         Uri uri = result.getData() != null ? result.getData().getData() : null;
-        r.put("uri", result.getResultCode() == Activity.RESULT_OK && uri != null ? uri.toString() : "");
+        boolean ok = result.getResultCode() == Activity.RESULT_OK && uri != null;
+        if (ok) prefs().edit().putString("lastSaveUri", uri.toString()).apply();   // remembered on this phone only
+        r.put("uri", ok ? uri.toString() : "");
         call.resolve(r);
     }
+
+    private SharedPreferences prefs() { return getContext().getSharedPreferences("unmarked", Context.MODE_PRIVATE); }
 
     private OutputStream openFile;   // stays open from the first piece to the last, so every storage provider works
 
