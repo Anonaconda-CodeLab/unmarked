@@ -6,7 +6,8 @@
   external scripts, analytics or trackers. The only outbound links are optional *Source code* / *Support on Ko-fi* buttons,
   which open in a new, isolated tab (`rel="noopener noreferrer"`).
 - **Nothing stored.** Files are held in memory while the page is open and are gone when it closes. The only thing kept on
-  the device is the three option settings (browser localStorage).
+  the device is the three option settings and a count of cleaning runs, used only for an occasional donation
+  request (browser localStorage).
 - **Originals untouched.** Unmarked always makes a new copy; it has no way to change the file you picked.
 - **Untrusted input.** Every file is treated as hostile: parsers check bounds and sizes, PDFs are parsed by pdf-lib
   without running any of their scripts, and all text taken from files is HTML-escaped before display.

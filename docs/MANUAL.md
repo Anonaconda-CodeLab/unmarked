@@ -114,7 +114,8 @@ Kept: the text, pictures and layout, links, form fields and their answers, and l
 
 Unmarked has no server, no account and no tracking. The web app blocks every network connection[[android]], and the Android app
 has no internet permission[[/android]], so it couldn't send your files anywhere even if it tried. The only things remembered on
-your device are your three option settings.
+your device are your three option settings and a count of how many times you have cleaned files (used only to
+ask, now and then, whether you would like to support the app).
 
 [[android]]
 ## The Android app
@@ -131,7 +132,10 @@ that page explains why). **About → Check for updates** tells you when a new ve
 > copy before you share anything sensitive. You are responsible for what you share; Anonaconda Code Lab accepts no
 > liability for any loss or harm from using this app. The full terms are in the GNU General Public License v3.
 
-## Help
+## Support and feedback
 
-Unmarked is free and open source (GNU GPL v3), made by Anonaconda Code Lab. Questions or problems:
-hello@anonacondacodelab.com. Please don't send the files you were cleaning; a description is usually enough.
+Questions, problems or ideas: email **hello@anonacondacodelab.com**. Describe what happened and, if you can, add a
+screenshot. Please don't send the files you were cleaning; a description is usually enough.
+
+Unmarked is free and open-source software from Anonaconda Code Lab, released under the GNU General Public License v3.
+If it is useful to you, you can support its development at **https://ko-fi.com/anonacondacodelab**.

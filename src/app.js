@@ -109,6 +109,7 @@
   function reset() {
     for (const f of state.files) { if (f.url) URL.revokeObjectURL(f.url); }
     state.files = []; state.phase = 'pick';
+    if ($('donateCard')) $('donateCard').hidden = true;
     $('files').textContent = '';
     updateActions();
   }
@@ -258,9 +259,28 @@
       await new Promise(r => setTimeout(r, 0));   // let the page update between files
     }
     state.phase = 'done';
+    countUse();
     state.files.forEach(render); updateActions();
     $('doneActions').scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
+
+  // ---------- gentle donation request (same as the studio's other apps) ----------
+  // Each "Remove hidden data" run counts as one use. At 20, 50 and 100 uses a card appears under the save buttons;
+  // "Not now" hides it until the next milestone, and after Ko-fi is tapped it never appears again.
+  const SUP_KEY = 'unmarked.support', DONATE_AT = [20, 50, 100];
+  const getSup = () => { try { return JSON.parse(localStorage.getItem(SUP_KEY) || '{}') || {}; } catch (e) { return {}; } };
+  const putSup = p => { try { localStorage.setItem(SUP_KEY, JSON.stringify(Object.assign(getSup(), p))); } catch (e) {} };
+  function countUse() {
+    const c = $('donateCard'); if (!c) return;
+    const s = getSup(), n = (+s.uses || 0) + 1, m = DONATE_AT.filter(x => n >= x).pop() || 0;
+    putSup({ uses: n });
+    c.hidden = !!s.donateDone || !m || (+s.donateSeen || 0) >= m;
+    if (!c.hidden) { $('donateN').textContent = n; c.dataset.m = m; }
+  }
+  if ($('donateCard')) {
+    $('btnDonate').addEventListener('click', () => { putSup({ donateDone: true }); $('donateCard').hidden = true; });
+    $('btnDonateLater').onclick = () => { putSup({ donateSeen: +$('donateCard').dataset.m }); $('donateCard').hidden = true; };
+  }
 
   // ---------- saving and sharing ----------
   const outFiles = list => list.filter(f => f.out).map(f => ({ name: f.out.name, bytes: f.out.bytes, mime: f.out.mime }));

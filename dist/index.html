@@ -155,7 +155,12 @@ code{font-family:var(--f-mono);font-size:.86em;background:var(--surface-2);borde
 .row-btn:last-child{border-bottom:none}
 .row-btn small{color:var(--muted);display:block;font-size:12.5px}
 .row-btn .chev{color:var(--muted)}
-.btn.coffee{background:var(--surface);border-color:var(--accent);color:var(--fg)}
+a.btn.coffee{background:#72a4f2;border-color:#5a8fe0;color:#10213f}
+.donate{display:flex;flex-direction:column;gap:10px;margin-top:6px;text-align:left}
+.donate p{margin:0}
+.donate .acts{display:flex;gap:8px;flex-wrap:wrap}
+.thanks{color:var(--muted);font-size:14px;line-height:1.5;margin:4px 4px 6px;text-align:center}
+.thanks a{color:var(--fg);font-weight:500;text-underline-offset:3px}
 html:not(.native) .native-only{display:none}
 .uses ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .limits{border-color:color-mix(in srgb,var(--med) 45%,var(--line))}
@@ -225,6 +230,10 @@ html:not(.native) .native-only{display:none}
         <button id="btnRestart" class="btn">Clean more files</button>
       </div>
       <p class="hint" id="saveHint"></p>
+      <div id="donateCard" class="card donate" hidden>
+      <p><b>Enjoying Unmarked?</b><br><span class="dev-meta">You've cleaned files <span id="donateN">20</span> times. The app is free, with no ads or tracking. If it's useful to you, a coffee helps keep it going.</span></p>
+      <div class="acts"><a id="btnDonate" class="btn coffee" href="https://ko-fi.com/anonacondacodelab" target="_blank" rel="noopener noreferrer">☕ Support on Ko-fi</a><button id="btnDonateLater" class="btn">Not now</button></div>
+    </div>
     </div>
 
     <div class="card uses" id="uses">
@@ -247,8 +256,9 @@ html:not(.native) .native-only{display:none}
         <li><b>Your phone's own records.</b> Your gallery, cloud backups and the original file keep their data. Unmarked makes a clean copy; it doesn't change the original.</li>
         <li><b>Clues in the content itself.</b> Writing style, tracked changes already accepted into a document, or a scan's visible stamps and signatures.</li>
       </ul>
-      <p class="as-is"><b>No guarantee.</b> Unmarked is free software provided as it is, without any warranty. It removes the hidden data it knows about, but no tool can promise to find everything. Check the clean copy before you share anything sensitive. You are responsible for what you share, and Anonaconda Code Lab accepts no liability for any loss or harm from using this app.</p>
+      <p class="as-is" id="asIs"><b>No guarantee.</b> Unmarked is free software provided as it is, without any warranty. It removes the hidden data it knows about, but no tool can promise to find everything. Check the clean copy before you share anything sensitive. You are responsible for what you share, and Anonaconda Code Lab accepts no liability for any loss or harm from using this app.</p>
     </div>
+    <p class="thanks">If you find this app useful, please consider <a href="https://ko-fi.com/anonacondacodelab" target="_blank" rel="noopener noreferrer">a small donation</a>. This is a one-man show, and your support encourages me to keep going. Thank you!</p>
   </section>
 
   <!-- ABOUT -->
@@ -298,11 +308,12 @@ html:not(.native) .native-only{display:none}
 <h2>Files Unmarked can't clean (yet)</h2>
 <ul><li><b>HEIC photos</b> (the default on iPhones and some Android phones). Most phones can save or share as JPEG instead.</li><li><b>Password-protected or encrypted PDFs.</b></li><li>GIF, TIFF, camera RAW files and videos.</li></ul>
 <h2>Privacy</h2>
-<p>Unmarked has no server, no account and no tracking. The web app blocks every network connection, so it couldn't send your files anywhere even if it tried. The only things remembered on your device are your three option settings.</p>
+<p>Unmarked has no server, no account and no tracking. The web app blocks every network connection, so it couldn't send your files anywhere even if it tried. The only things remembered on your device are your three option settings and a count of how many times you have cleaned files (used only to ask, now and then, whether you would like to support the app).</p>
 <h2>No guarantee</h2>
 <div class="callout"><p>Unmarked is free software, provided <b>as it is, without any warranty</b>. It removes the hidden data it knows about, but no tool can promise to find everything, and new phones and apps keep adding new kinds of data. Check the clean copy before you share anything sensitive. You are responsible for what you share; Anonaconda Code Lab accepts no liability for any loss or harm from using this app. The full terms are in the GNU General Public License v3.</p></div>
-<h2>Help</h2>
-<p>Unmarked is free and open source (GNU GPL v3), made by Anonaconda Code Lab. Questions or problems: hello@anonacondacodelab.com. Please don't send the files you were cleaning; a description is usually enough.</p></article>
+<h2>Support and feedback</h2>
+<p>Questions, problems or ideas: email <b>hello@anonacondacodelab.com</b>. Describe what happened and, if you can, add a screenshot. Please don't send the files you were cleaning; a description is usually enough.</p>
+<p>Unmarked is free and open-source software from Anonaconda Code Lab, released under the GNU General Public License v3. If it is useful to you, you can support its development at <b><a href="https://ko-fi.com/anonacondacodelab" target="_blank" rel="noopener noreferrer">ko-fi.com/anonacondacodelab</a></b>.</p></article>
   </section>
 </main>
 
@@ -1328,6 +1339,7 @@ if (NATIVE) (() => {
   function reset() {
     for (const f of state.files) { if (f.url) URL.revokeObjectURL(f.url); }
     state.files = []; state.phase = 'pick';
+    if ($('donateCard')) $('donateCard').hidden = true;
     $('files').textContent = '';
     updateActions();
   }
@@ -1477,9 +1489,28 @@ if (NATIVE) (() => {
       await new Promise(r => setTimeout(r, 0));   // let the page update between files
     }
     state.phase = 'done';
+    countUse();
     state.files.forEach(render); updateActions();
     $('doneActions').scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
+
+  // ---------- gentle donation request (same as the studio's other apps) ----------
+  // Each "Remove hidden data" run counts as one use. At 20, 50 and 100 uses a card appears under the save buttons;
+  // "Not now" hides it until the next milestone, and after Ko-fi is tapped it never appears again.
+  const SUP_KEY = 'unmarked.support', DONATE_AT = [20, 50, 100];
+  const getSup = () => { try { return JSON.parse(localStorage.getItem(SUP_KEY) || '{}') || {}; } catch (e) { return {}; } };
+  const putSup = p => { try { localStorage.setItem(SUP_KEY, JSON.stringify(Object.assign(getSup(), p))); } catch (e) {} };
+  function countUse() {
+    const c = $('donateCard'); if (!c) return;
+    const s = getSup(), n = (+s.uses || 0) + 1, m = DONATE_AT.filter(x => n >= x).pop() || 0;
+    putSup({ uses: n });
+    c.hidden = !!s.donateDone || !m || (+s.donateSeen || 0) >= m;
+    if (!c.hidden) { $('donateN').textContent = n; c.dataset.m = m; }
+  }
+  if ($('donateCard')) {
+    $('btnDonate').addEventListener('click', () => { putSup({ donateDone: true }); $('donateCard').hidden = true; });
+    $('btnDonateLater').onclick = () => { putSup({ donateSeen: +$('donateCard').dataset.m }); $('donateCard').hidden = true; };
+  }
 
   // ---------- saving and sharing ----------
   const outFiles = list => list.filter(f => f.out).map(f => ({ name: f.out.name, bytes: f.out.bytes, mime: f.out.mime }));
