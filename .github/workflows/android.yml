@@ -1,0 +1,104 @@
+name: Android APK
+# Builds the Android app (mobile/) from the same web app in dist/ and signs it with the release key kept in the
+# repository secrets. Pushes to main publish the "android-test" pre-release; a version tag (v0.1.0) publishes the
+# official release, with its SHA-256 checksum and the signing certificate's fingerprint in the release notes.
+on:
+  push:
+    tags: ['v*']
+    branches: [main]
+    paths: ['src/**', 'dist/**', 'docs/MANUAL.md', 'build.mjs', 'mobile/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Publish the official release (tag v<version from package.json>) from this commit'
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Build the web app
+        env:
+          LEADONE_BUILD_ID: ${{ github.sha }}   # shown as "build abc1234" in the app's About
+        run: node build.mjs
+      - name: Copy it into the Android project
+        working-directory: mobile
+        run: npm ci && npx cap sync android
+      - name: Signing key
+        env:
+          # the studio's shared signing key (STUDIO_*); the older LEADONE_* names still work as a fallback
+          KS: ${{ secrets.STUDIO_KEYSTORE_B64 || secrets.LEADONE_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > "$RUNNER_TEMP/studio.jks"; echo "LEADONE_KEYSTORE=$RUNNER_TEMP/studio.jks" >> "$GITHUB_ENV"; fi
+      - name: Build the APK
+        working-directory: mobile/android
+        env:
+          LEADONE_KEYSTORE_PASSWORD: ${{ secrets.STUDIO_KEYSTORE_PASSWORD || secrets.LEADONE_KEYSTORE_PASSWORD }}
+          LEADONE_KEY_PASSWORD: ${{ secrets.STUDIO_KEYSTORE_PASSWORD || secrets.LEADONE_KEYSTORE_PASSWORD }}
+          LEADONE_KEY_ALIAS: ${{ secrets.STUDIO_KEY_ALIAS || 'leadone' }}
+        run: chmod +x gradlew && ./gradlew --no-daemon assembleRelease
+      - name: Require the release key
+        run: |
+          if [ ! -f mobile/android/app/build/outputs/apk/release/app-release.apk ]; then
+            echo "::error::The app compiled, but it is unsigned. Add the repository secrets LEADONE_KEYSTORE_B64 and LEADONE_KEYSTORE_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+            exit 1
+          fi
+      - name: Check the APK (no internet permission, signed)
+        run: |
+          APK=mobile/android/app/build/outputs/apk/release/app-release.apk
+          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          "$AAPT" dump permissions "$APK" | tee perms.txt
+          if grep -q "android.permission.INTERNET" perms.txt; then echo "::error::INTERNET permission found"; exit 1; fi
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          CERT=$("$APKSIGNER" verify --print-certs "$APK" | grep -i "certificate SHA-256 digest" | head -1 | sed 's/.*: //' | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')
+          echo "Signing certificate SHA-256: $CERT"
+          # the APK must be signed with the published key (certSha256 in build.mjs), or nothing is published
+          WANT=$(node -e "const m=/certSha256: '([0-9A-F:]+)'/.exec(require('fs').readFileSync('build.mjs','utf8')); console.log(m ? m[1] : '')")
+          if [ "$CERT" != "$WANT" ]; then echo "::error::Signed with $CERT, but the published fingerprint is $WANT"; exit 1; fi
+          echo "CERT=$CERT" >> "$GITHUB_ENV"
+          VER=$(node -p "require('./package.json').version")
+          cp "$APK" "Unmarked-$VER.apk"
+          echo "VER=$VER" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Unmarked-${{ env.VER }}-apk
+          path: Unmarked-${{ env.VER }}.apk
+      - name: Publish the official release (version tag, or run by hand with "release" ticked)
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$VER"
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$TAG" != "$GITHUB_REF_NAME" ]; then echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $VER"; exit 1; fi
+          if [ "$GITHUB_REF_TYPE" != tag ] && gh release view "$TAG" >/dev/null 2>&1; then echo "::error::Release $TAG already exists; raise the version first"; exit 1; fi
+          F="Unmarked-$VER.apk"; SUM=$(sha256sum "$F" | cut -d' ' -f1); echo "$SUM  $F" > "$F.sha256"
+          { awk -v v="## $VER" '$0==v{f=1;next} /^## /{if(f)exit} f' CHANGELOG.md
+            echo; echo "## Download and check"
+            echo "- **$F** (below). Install guide: https://unmarked.anonacondacodelab.com/android.html"
+            echo "- SHA-256 of the APK: \`$SUM\`"
+            echo "- Signing certificate SHA-256: \`$CERT\`"
+            echo; echo "Built by GitHub Actions from this tag's source code (also attached below). No internet permission."; } > notes.md
+          if [ "$GITHUB_REF_TYPE" = tag ]; then gh release create "$TAG" "$F" "$F.sha256" --verify-tag --latest --title "Unmarked $VER" --notes-file notes.md
+          else gh release create "$TAG" "$F" "$F.sha256" --target "$GITHUB_SHA" --latest --title "Unmarked $VER" --notes-file notes.md; fi
+      - name: Publish as the android-test pre-release
+        if: github.ref == 'refs/heads/main' && !inputs.release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-test --yes --cleanup-tag || true
+          gh release create android-test "Unmarked-$VER.apk" --prerelease --target "$GITHUB_SHA" \
+            --title "Android test build $VER (build ${{ github.run_number }})" \
+            --notes "Test build of the Android app, made automatically from commit ${GITHUB_SHA::7}. Install over the previous test build."

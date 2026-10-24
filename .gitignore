@@ -1,0 +1,23 @@
+# Never commit files you cleaned (or their originals): only the test fixtures are tracked
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.heic
+*.pdf
+*.zip
+!tests/fixtures/*
+!src/icons/*
+!dist/*.png
+!docs/screenshots/*.png
+!mobile/android/app/src/main/res/**/*.png
+
+# Tooling
+node_modules/
+dist/fragment.html
+.DS_Store
+Thumbs.db
+
+# Android signing keys never go in the repository
+*.jks
+*.keystore

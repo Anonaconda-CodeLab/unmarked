@@ -1,0 +1,3 @@
+# Netlify: skip the deploy unless the published site (dist/) changed. Exit 0 = skip, 1 = deploy.
+[build]
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- dist"
