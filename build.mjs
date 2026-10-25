@@ -36,15 +36,15 @@ const about = `<div class="card" id="aboutCard">
       <div><div class="dev-name">About ${APP.APP_NAME}</div><div class="dev-meta">Version ${APP.VERSION}${BUILD ? ` · build ${BUILD}` : ''} · free and open source (GNU GPL v3) · runs entirely on this device</div></div>
       <p class="dev-meta" style="margin:0">© 2026 Anonaconda Code Lab. You may use, share and modify this app under the GNU General Public License v3 or later; it comes with no warranty.</p>
       ${contact ? `<p class="dev-meta" style="margin:0">Questions or problems: <a href="mailto:${contact}">${contact}</a>. A description or a screenshot is usually enough; please don't send the files you were cleaning.</p>` : ''}
-      <div class="acts-row"><button id="btnHelp2" class="btn">User manual</button>${appUrl && PROJECT.androidPage ? `<a class="btn native-only" href="${appUrl}/android.html?v=${APP.VERSION}" target="_blank" rel="noopener noreferrer">Check for updates</a>` : ''}${repo ? `<a class="btn" href="${repo}" target="_blank" rel="noopener noreferrer">Source code</a>` : ''}${kofi ? `<a class="btn coffee" href="${kofi}" target="_blank" rel="noopener noreferrer">☕ Support on Ko-fi</a>` : ''}</div>
+      <div class="acts-row"><button id="btnHelp2" class="btn">User manual</button>${appUrl && PROJECT.androidPage ? `<a class="btn native-only" href="${appUrl}/android.html?v=${APP.VERSION}" rel="noopener noreferrer">Check for updates</a>` : ''}${repo ? `<a class="btn" href="${repo}" rel="noopener noreferrer">Source code</a>` : ''}${kofi ? `<a class="btn coffee" href="${kofi}" rel="noopener noreferrer">☕ Support on Ko-fi</a>` : ''}</div>
     </div>`;
 
 // gentle donation card after cleaning, shown at a few usage milestones only (see app.js); same as the studio's other apps
 const donate = kofi ? `<div id="donateCard" class="card donate" hidden>
       <p><b>Enjoying ${APP.APP_NAME}?</b><br><span class="dev-meta">You've cleaned files <span id="donateN">20</span> times. The app is free, with no ads or tracking. If it's useful to you, a coffee helps keep it going.</span></p>
-      <div class="acts"><a id="btnDonate" class="btn coffee" href="${kofi}" target="_blank" rel="noopener noreferrer">☕ Support on Ko-fi</a><button id="btnDonateLater" class="btn">Not now</button></div>
+      <div class="acts"><a id="btnDonate" class="btn coffee" href="${kofi}" rel="noopener noreferrer">☕ Support on Ko-fi</a><button id="btnDonateLater" class="btn">Not now</button></div>
     </div>` : '';
-const thanks = kofi ? `<p class="thanks">If you find this app useful, please consider <a href="${kofi}" target="_blank" rel="noopener noreferrer">a small donation</a>. This is a one-man show, and your support encourages me to keep going. Thank you!</p>` : '';
+const thanks = kofi ? `<p class="thanks">If you find this app useful, please consider <a href="${kofi}" rel="noopener noreferrer">a small donation</a>. This is a one-man show, and your support encourages me to keep going. Thank you!</p>` : '';
 
 const src = f => readFileSync(join(root, 'src', f), 'utf8');
 
@@ -55,7 +55,7 @@ function md(text) {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
     .replace(/(^|[^*\w])\*([^*\s][^*]*)\*(?!\w)/g, '$1<i>$2</i>')
-    .replace(/(?<!["\/])\bhttps:\/\/[\w.\/-]+[\w\/]/g, u => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u.replace('https://', '')}</a>`);
+    .replace(/(?<!["\/])\bhttps:\/\/[\w.\/-]+[\w\/]/g, u => `<a href="${u}" rel="noopener noreferrer">${u.replace('https://', '')}</a>`);
   const out = []; let para = [], list = null, quote = null;
   const flushP = () => { if (para.length) out.push(`<p>${inline(para.join(' '))}</p>`); para = []; };
   const flushL = () => { if (list) out.push(`<${list.t}>${list.items.map(i => `<li>${inline(i.text)}${i.sub.length ? `<ul>${i.sub.map(x => `<li>${inline(x)}</li>`).join('')}</ul>` : ''}</li>`).join('')}</${list.t}>`); list = null; };

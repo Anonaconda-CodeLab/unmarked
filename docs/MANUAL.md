@@ -117,6 +117,10 @@ has no internet permission[[/android]], so it couldn't send your files anywhere 
 your device are your three option settings and a count of how many times you have cleaned files (used only to
 ask, now and then, whether you would like to support the app).
 
+Opening the web app is an ordinary visit to its website, like any page; once it has loaded, nothing you add or clean is sent anywhere.
+
+**Translating the page.** If you use your browser's *Translate* button, the browser sends the page's text to its translation service (Google's, in Chrome). Unmarked marks your file names and the hidden data found in them so the translator leaves them out: only the app's own buttons and labels are translated.
+
 [[android]]
 ## The Android app
 

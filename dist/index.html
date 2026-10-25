@@ -232,7 +232,7 @@ html:not(.native) .native-only{display:none}
       <p class="hint" id="saveHint"></p>
       <div id="donateCard" class="card donate" hidden>
       <p><b>Enjoying Unmarked?</b><br><span class="dev-meta">You've cleaned files <span id="donateN">20</span> times. The app is free, with no ads or tracking. If it's useful to you, a coffee helps keep it going.</span></p>
-      <div class="acts"><a id="btnDonate" class="btn coffee" href="https://ko-fi.com/anonacondacodelab" target="_blank" rel="noopener noreferrer">☕ Support on Ko-fi</a><button id="btnDonateLater" class="btn">Not now</button></div>
+      <div class="acts"><a id="btnDonate" class="btn coffee" href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">☕ Support on Ko-fi</a><button id="btnDonateLater" class="btn">Not now</button></div>
     </div>
     </div>
 
@@ -258,7 +258,7 @@ html:not(.native) .native-only{display:none}
       </ul>
       <p class="as-is" id="asIs"><b>No guarantee.</b> Unmarked is free software provided as it is, without any warranty. It removes the hidden data it knows about, but no tool can promise to find everything. Check the clean copy before you share anything sensitive. You are responsible for what you share, and Anonaconda Code Lab accepts no liability for any loss or harm from using this app.</p>
     </div>
-    <p class="thanks">If you find this app useful, please consider <a href="https://ko-fi.com/anonacondacodelab" target="_blank" rel="noopener noreferrer">a small donation</a>. This is a one-man show, and your support encourages me to keep going. Thank you!</p>
+    <p class="thanks">If you find this app useful, please consider <a href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">a small donation</a>. This is a one-man show, and your support encourages me to keep going. Thank you!</p>
   </section>
 
   <!-- ABOUT -->
@@ -271,7 +271,7 @@ html:not(.native) .native-only{display:none}
       <div><div class="dev-name">About Unmarked</div><div class="dev-meta">Version 0.1.0 · free and open source (GNU GPL v3) · runs entirely on this device</div></div>
       <p class="dev-meta" style="margin:0">© 2026 Anonaconda Code Lab. You may use, share and modify this app under the GNU General Public License v3 or later; it comes with no warranty.</p>
       <p class="dev-meta" style="margin:0">Questions or problems: <a href="mailto:hello@anonacondacodelab.com">hello@anonacondacodelab.com</a>. A description or a screenshot is usually enough; please don't send the files you were cleaning.</p>
-      <div class="acts-row"><button id="btnHelp2" class="btn">User manual</button><a class="btn native-only" href="https://unmarked.anonacondacodelab.com/android.html?v=0.1.0" target="_blank" rel="noopener noreferrer">Check for updates</a><a class="btn" href="https://github.com/Anonaconda-CodeLab/unmarked" target="_blank" rel="noopener noreferrer">Source code</a><a class="btn coffee" href="https://ko-fi.com/anonacondacodelab" target="_blank" rel="noopener noreferrer">☕ Support on Ko-fi</a></div>
+      <div class="acts-row"><button id="btnHelp2" class="btn">User manual</button><a class="btn native-only" href="https://unmarked.anonacondacodelab.com/android.html?v=0.1.0" rel="noopener noreferrer">Check for updates</a><a class="btn" href="https://github.com/Anonaconda-CodeLab/unmarked" rel="noopener noreferrer">Source code</a><a class="btn coffee" href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">☕ Support on Ko-fi</a></div>
     </div>
     <div class="acts-row"><button class="btn" id="btnAboutBack">Back</button></div>
   </section>
@@ -310,13 +310,15 @@ html:not(.native) .native-only{display:none}
 <ul><li><b>HEIC photos</b> (the default on iPhones and some Android phones). Most phones can save or share as JPEG instead.</li><li><b>Password-protected or encrypted PDFs.</b></li><li>GIF, TIFF, camera RAW files and videos.</li></ul>
 <h2>Privacy</h2>
 <p>Unmarked has no server, no account and no tracking. The web app blocks every network connection, and the Android app has no internet permission, so it couldn't send your files anywhere even if it tried. The only things remembered on your device are your three option settings and a count of how many times you have cleaned files (used only to ask, now and then, whether you would like to support the app).</p>
+<p>Opening the web app is an ordinary visit to its website, like any page; once it has loaded, nothing you add or clean is sent anywhere.</p>
+<p><b>Translating the page.</b> If you use your browser's <i>Translate</i> button, the browser sends the page's text to its translation service (Google's, in Chrome). Unmarked marks your file names and the hidden data found in them so the translator leaves them out: only the app's own buttons and labels are translated.</p>
 <h2>The Android app</h2>
-<p>The Android app is the same app with two extras: <b>Share → Unmarked</b> from any app, and saving and sharing through Android's own screens. Download it from <a href="https://unmarked.anonacondacodelab.com/android.html" target="_blank" rel="noopener noreferrer">unmarked.anonacondacodelab.com/android.html</a> (not from Google Play; that page explains why). <b>About → Check for updates</b> tells you when a new version is out.</p>
+<p>The Android app is the same app with two extras: <b>Share → Unmarked</b> from any app, and saving and sharing through Android's own screens. Download it from <a href="https://unmarked.anonacondacodelab.com/android.html" rel="noopener noreferrer">unmarked.anonacondacodelab.com/android.html</a> (not from Google Play; that page explains why). <b>About → Check for updates</b> tells you when a new version is out.</p>
 <h2>No guarantee</h2>
 <div class="callout"><p>Unmarked is free software, provided <b>as it is, without any warranty</b>. It removes the hidden data it knows about, but no tool can promise to find everything, and new phones and apps keep adding new kinds of data. Check the clean copy before you share anything sensitive. You are responsible for what you share; Anonaconda Code Lab accepts no liability for any loss or harm from using this app. The full terms are in the GNU General Public License v3.</p></div>
 <h2>Support and feedback</h2>
 <p>Questions, problems or ideas: email <b>hello@anonacondacodelab.com</b>. Describe what happened and, if you can, add a screenshot. Please don't send the files you were cleaning; a description is usually enough.</p>
-<p>Unmarked is free and open-source software from Anonaconda Code Lab, released under the GNU General Public License v3. If it is useful to you, you can support its development at <b><a href="https://ko-fi.com/anonacondacodelab" target="_blank" rel="noopener noreferrer">ko-fi.com/anonacondacodelab</a></b>.</p></article>
+<p>Unmarked is free and open-source software from Anonaconda Code Lab, released under the GNU General Public License v3. If it is useful to you, you can support its development at <b><a href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">ko-fi.com/anonacondacodelab</a></b>.</p></article>
   </section>
 </main>
 
@@ -324,7 +326,7 @@ html:not(.native) .native-only{display:none}
   <li class="file">
     <div class="file-top">
       <div class="thumb"></div>
-      <div class="file-meta">
+      <div class="file-meta" translate="no">
         <b class="file-name"></b>
         <span class="file-sub"></span>
       </div>
@@ -1413,7 +1415,7 @@ if (NATIVE) (() => {
         const items = list.filter(x => x.risk === r); if (!items.length) continue;
         html += `<li class="grp">${title}</li>` + items.map(x => {
           const rm = removed(x, f);
-          return `<li class="${r}${rm ? '' : ' kept'}"><i></i><b>${esc(x.label)}</b><span class="tag${rm ? '' : ' kept'}">${rm ? (f.out ? 'Removed' : 'Remove') : 'Keep'}</span>${x.value ? `<span class="val">${esc(x.value)}</span>` : ''}${x.note ? `<span class="note">${esc(x.note)}</span>` : ''}</li>`;
+          return `<li class="${r}${rm ? '' : ' kept'}"><i></i><b>${esc(x.label)}</b><span class="tag${rm ? '' : ' kept'}">${rm ? (f.out ? 'Removed' : 'Remove') : 'Keep'}</span>${x.value ? `<span class="val" translate="no">${esc(x.value)}</span>` : ''}${x.note ? `<span class="note">${esc(x.note)}</span>` : ''}</li>`;
         }).join('');
       }
       q('.findings summary').textContent = sum;
@@ -1496,6 +1498,9 @@ if (NATIVE) (() => {
     state.files.forEach(render); updateActions();
     $('doneActions').scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
+
+  // Links open in the same tab, so leaving the page (Ko-fi, the manual's links) would drop the clean copies: ask first
+  window.addEventListener('beforeunload', e => { if (!NATIVE && state.phase === 'done') { e.preventDefault(); e.returnValue = ''; } });
 
   // ---------- gentle donation request (same as the studio's other apps) ----------
   // Each "Remove hidden data" run counts as one use. At 20, 50 and 100 uses a card appears under the save buttons;

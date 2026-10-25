@@ -180,7 +180,7 @@
         const items = list.filter(x => x.risk === r); if (!items.length) continue;
         html += `<li class="grp">${title}</li>` + items.map(x => {
           const rm = removed(x, f);
-          return `<li class="${r}${rm ? '' : ' kept'}"><i></i><b>${esc(x.label)}</b><span class="tag${rm ? '' : ' kept'}">${rm ? (f.out ? 'Removed' : 'Remove') : 'Keep'}</span>${x.value ? `<span class="val">${esc(x.value)}</span>` : ''}${x.note ? `<span class="note">${esc(x.note)}</span>` : ''}</li>`;
+          return `<li class="${r}${rm ? '' : ' kept'}"><i></i><b>${esc(x.label)}</b><span class="tag${rm ? '' : ' kept'}">${rm ? (f.out ? 'Removed' : 'Remove') : 'Keep'}</span>${x.value ? `<span class="val" translate="no">${esc(x.value)}</span>` : ''}${x.note ? `<span class="note">${esc(x.note)}</span>` : ''}</li>`;
         }).join('');
       }
       q('.findings summary').textContent = sum;
@@ -263,6 +263,9 @@
     state.files.forEach(render); updateActions();
     $('doneActions').scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
+
+  // Links open in the same tab, so leaving the page (Ko-fi, the manual's links) would drop the clean copies: ask first
+  window.addEventListener('beforeunload', e => { if (!NATIVE && state.phase === 'done') { e.preventDefault(); e.returnValue = ''; } });
 
   // ---------- gentle donation request (same as the studio's other apps) ----------
   // Each "Remove hidden data" run counts as one use. At 20, 50 and 100 uses a card appears under the save buttons;
