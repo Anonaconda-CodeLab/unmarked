@@ -41,10 +41,10 @@ const about = `<div class="card" id="aboutCard">
 
 // gentle donation card after cleaning, shown at a few usage milestones only (see app.js); same as the studio's other apps
 const donate = kofi ? `<div id="donateCard" class="card donate" hidden>
-      <p><b>Enjoying ${APP.APP_NAME}?</b><br><span class="dev-meta">You've cleaned files <span id="donateN">20</span> times. The app is free, with no ads or tracking. If it's useful to you, a coffee helps keep it going.</span></p>
+      <p><b>Enjoying ${APP.APP_NAME}?</b><br><span class="dev-meta">You've cleaned files <span id="donateN">20</span> times. No ads, no tracking. If you find this app useful, please consider making a small donation to help fund development. Thank you!</span></p>
       <div class="acts"><a id="btnDonate" class="btn coffee" href="${kofi}" rel="noopener noreferrer">☕ Support on Ko-fi</a><button id="btnDonateLater" class="btn">Not now</button></div>
     </div>` : '';
-const thanks = kofi ? `<p class="thanks">If you find this app useful, please consider <a href="${kofi}" rel="noopener noreferrer">a small donation</a>. It's made by one person, with no ads or tracking. Thank you!</p>` : '';
+const thanks = kofi ? `<p class="thanks">No ads, no tracking. If you find this app useful, please consider <a href="${kofi}" rel="noopener noreferrer">making a small donation</a> to help fund development. Thank you!</p>` : '';
 
 const src = f => readFileSync(join(root, 'src', f), 'utf8');
 

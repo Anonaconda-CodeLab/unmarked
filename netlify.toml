@@ -1,4 +1,0 @@
-# This site has moved to Cloudflare Pages. Netlify skips every build (exit 0 = skip, which costs no credits) until the
-# old Netlify project is deleted; then this file can go.
-[build]
-  ignore = "exit 0"

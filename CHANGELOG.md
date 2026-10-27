@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.2
+- **Colour profiles are cleaned too.** A standard sRGB profile is removed: apps assume sRGB anyway, so colours stay
+  exactly the same. Any other profile (such as Display P3) is kept so colours look right, but the details that can
+  give something away are blanked: when it was made (some apps stamp the moment the photo was saved), the app, maker
+  and model codes, and copyright or device text. Checked with littleCMS: colours convert identically before and after.
+- Works for JPEG (including profiles split over several parts), PNG and WebP, and for photos placed in PDFs.
+- After cleaning, the summary reads "N removed, M kept". A PNG's one-byte sRGB marker holds nothing and is no longer
+  listed.
+- New donation wording, shared by all the studio's apps: "No ads, no tracking. If you find this app useful, please
+  consider making a small donation to help fund development. Thank you!"
+
 ## 0.1.1
 - Links open in the same tab, and leaving the page after cleaning asks first, so clean copies aren't lost.
 - File names and the hidden data found are marked so a browser's Translate button leaves them out (translation

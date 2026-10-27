@@ -231,7 +231,7 @@ html:not(.native) .native-only{display:none}
       </div>
       <p class="hint" id="saveHint"></p>
       <div id="donateCard" class="card donate" hidden>
-      <p><b>Enjoying Unmarked?</b><br><span class="dev-meta">You've cleaned files <span id="donateN">20</span> times. The app is free, with no ads or tracking. If it's useful to you, a coffee helps keep it going.</span></p>
+      <p><b>Enjoying Unmarked?</b><br><span class="dev-meta">You've cleaned files <span id="donateN">20</span> times. No ads, no tracking. If you find this app useful, please consider making a small donation to help fund development. Thank you!</span></p>
       <div class="acts"><a id="btnDonate" class="btn coffee" href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">☕ Support on Ko-fi</a><button id="btnDonateLater" class="btn">Not now</button></div>
     </div>
     </div>
@@ -258,7 +258,7 @@ html:not(.native) .native-only{display:none}
       </ul>
       <p class="as-is" id="asIs"><b>No guarantee.</b> Unmarked is free software provided as it is, without any warranty. It removes the hidden data it knows about, but no tool can promise to find everything. Check the clean copy before you share anything sensitive. You are responsible for what you share, and Anonaconda Code Lab accepts no liability for any loss or harm from using this app.</p>
     </div>
-    <p class="thanks">If you find this app useful, please consider <a href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">a small donation</a>. It's made by one person, with no ads or tracking. Thank you!</p>
+    <p class="thanks">No ads, no tracking. If you find this app useful, please consider <a href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">making a small donation</a> to help fund development. Thank you!</p>
   </section>
 
   <!-- ABOUT -->
@@ -268,10 +268,10 @@ html:not(.native) .native-only{display:none}
       <button class="row-btn" id="btnHelp"><span>User manual<small>What gets removed, what's kept, and why</small></span><span class="chev">›</span></button>
     </div>
     <div class="card" id="aboutCard">
-      <div><div class="dev-name">About Unmarked</div><div class="dev-meta">Version 0.1.1 · free and open source (GNU GPL v3) · runs entirely on this device</div></div>
+      <div><div class="dev-name">About Unmarked</div><div class="dev-meta">Version 0.1.2 · free and open source (GNU GPL v3) · runs entirely on this device</div></div>
       <p class="dev-meta" style="margin:0">© 2026 Anonaconda Code Lab. You may use, share and modify this app under the GNU General Public License v3 or later; it comes with no warranty.</p>
       <p class="dev-meta" style="margin:0">Questions or problems: <a href="mailto:hello@anonacondacodelab.com">hello@anonacondacodelab.com</a>. A description or a screenshot is usually enough; please don't send the files you were cleaning.</p>
-      <div class="acts-row"><button id="btnHelp2" class="btn">User manual</button><a class="btn native-only" href="https://unmarked.anonacondacodelab.com/android.html?v=0.1.1" rel="noopener noreferrer">Check for updates</a><a class="btn" href="https://github.com/Anonaconda-CodeLab/unmarked" rel="noopener noreferrer">Source code</a><a class="btn coffee" href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">☕ Support on Ko-fi</a></div>
+      <div class="acts-row"><button id="btnHelp2" class="btn">User manual</button><a class="btn native-only" href="https://unmarked.anonacondacodelab.com/android.html?v=0.1.2" rel="noopener noreferrer">Check for updates</a><a class="btn" href="https://github.com/Anonaconda-CodeLab/unmarked" rel="noopener noreferrer">Source code</a><a class="btn coffee" href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">☕ Support on Ko-fi</a></div>
     </div>
     <div class="acts-row"><button class="btn" id="btnAboutBack">Back</button></div>
   </section>
@@ -293,9 +293,9 @@ html:not(.native) .native-only{display:none}
 <p>Your choices are remembered on this device.</p>
 <h2>Photos (JPEG, PNG, WebP)</h2>
 <p>Removed:</p>
-<ul><li><b>Location</b> (GPS position, altitude, the direction the camera faced) and place names</li><li><b>Names</b>: author, camera owner, creator, contact details</li><li><b>Device details</b>: phone or camera maker and model, serial numbers, lens, software and editing apps</li><li><b>Dates and time zone</b></li><li><b>Embedded thumbnails</b>: a small copy of the original picture, which can still show parts you cropped out</li><li><b>Motion photos</b>: the short video clip some phones attach to a photo</li><li><b>Edit history</b>, document IDs and other data added by editing apps</li><li><b>Comments, titles, descriptions and keywords</b></li><li>Camera settings (exposure, ISO and similar) and other technical data</li></ul>
+<ul><li><b>Location</b> (GPS position, altitude, the direction the camera faced) and place names</li><li><b>Names</b>: author, camera owner, creator, contact details</li><li><b>Device details</b>: phone or camera maker and model, serial numbers, lens, software and editing apps</li><li><b>Dates and time zone</b></li><li><b>Embedded thumbnails</b>: a small copy of the original picture, which can still show parts you cropped out</li><li><b>Motion photos</b>: the short video clip some phones attach to a photo</li><li><b>Edit history</b>, document IDs and other data added by editing apps</li><li><b>Comments, titles, descriptions and keywords</b></li><li>Camera settings (exposure, ISO and similar) and other technical data</li><li><b>Standard sRGB colour profiles</b>: apps and browsers assume sRGB when a picture has no profile, so the colours stay exactly the same</li></ul>
 <p>Kept, because they are harmless and needed to show the picture correctly:</p>
-<ul><li><b>Rotation</b>: so the photo appears the right way up</li><li><b>Colour profile</b>: so colours look right</li></ul>
+<ul><li><b>Rotation</b>: so the photo appears the right way up</li><li><b>Other colour profiles</b> (for example Display P3 from newer phones): so colours look right. The details inside that can give something away are blanked: when the profile was made (some apps stamp the moment the photo was saved), the app, maker and model codes, and any copyright or device text. These play no part in the colours.</li></ul>
 <p>Cleaning is <b>lossless</b>. Unmarked cuts the hidden data out of the file without touching the picture itself, so there is no recompression and no loss of quality.</p>
 <h2>PDF documents</h2>
 <p>Removed:</p>
@@ -318,7 +318,7 @@ html:not(.native) .native-only{display:none}
 <div class="callout"><p>Unmarked is free software, provided <b>as it is, without any warranty</b>. It removes the hidden data it knows about, but no tool can promise to find everything, and new phones and apps keep adding new kinds of data. Check the clean copy before you share anything sensitive. You are responsible for what you share; Anonaconda Code Lab accepts no liability for any loss or harm from using this app. The full terms are in the GNU General Public License v3.</p></div>
 <h2>Support and feedback</h2>
 <p>Questions, problems or ideas: email <b>hello@anonacondacodelab.com</b>. Describe what happened and, if you can, add a screenshot. Please don't send the files you were cleaning; a description is usually enough.</p>
-<p>Unmarked is free and open-source software from Anonaconda Code Lab, released under the GNU General Public License v3. If it is useful to you, you can support its development at <b><a href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">ko-fi.com/anonacondacodelab</a></b>.</p></article>
+<p>Unmarked is free and open-source software from Anonaconda Code Lab, released under the GNU General Public License v3. No ads, no tracking. If you find this app useful, please consider making a small donation to help fund development: <b><a href="https://ko-fi.com/anonacondacodelab" rel="noopener noreferrer">ko-fi.com/anonacondacodelab</a></b>. Thank you!</p></article>
   </section>
 </main>
 
@@ -364,7 +364,8 @@ html:not(.native) .native-only{display:none}
    (options.pdfLib). Works in browsers and in Node 18+, so other apps (and the tests) can reuse it unchanged.
 
    Images are cleaned losslessly: metadata blocks are cut out of the file and the picture data is copied byte for byte,
-   so there is no recompression and no quality loss. Only harmless display data is kept (colour profile, rotation).
+   so there is no recompression and no quality loss. Only harmless display data is kept: the rotation, and a colour
+   profile other than plain sRGB, with its creation details blanked (see "ICC colour profiles" below).
 
    API (all on the global UnmarkedClean):
      detect(bytes)                         -> { type, label, ext, mime, supported, reason? }
@@ -413,6 +414,14 @@ html:not(.native) .native-only{display:none}
       return new Uint8Array(await out.arrayBuffer());
     } catch (e) { return null; }
   }
+  async function deflate(bytes) {
+    if (typeof CompressionStream === 'undefined') return null;
+    try {
+      const out = new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate')));
+      return new Uint8Array(await out.arrayBuffer());
+    } catch (e) { return null; }
+  }
+  const same = (a, b) => { if (a.length !== b.length) return false; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false; return true; };
 
   // ---------- CRC-32 (PNG chunks, zip) ----------
   const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -664,6 +673,87 @@ html:not(.native) .native-only{display:none}
     return out;
   }
 
+  // ---------- ICC colour profiles ----------
+  // A plain sRGB profile is removed: viewers assume sRGB when a picture has no profile, so the colours stay the same.
+  // Any other profile (Display P3, Adobe RGB…) is kept so colours look right, but its revealing fields are blanked:
+  // when it was made (lcms and Pillow stamp the moment the file was saved), the app, platform, maker and model codes,
+  // the profile ID (a checksum of the original), the copyright text and any device or calibration notes.
+  // None of these take part in colour conversion, and the profile keeps its length.
+  const SRGB_D50 = { rXYZ: [0.4361, 0.2225, 0.0139], gXYZ: [0.3851, 0.7169, 0.0971], bXYZ: [0.1431, 0.0606, 0.7141] };
+  const s15 = (p, o) => ((p[o] << 24) | (p[o + 1] << 16) | (p[o + 2] << 8) | p[o + 3]) / 65536;
+  function iccTags(p) {
+    const tags = new Map(), n = Math.min(be32(p, 128), 200);
+    for (let i = 0; i < n; i++) {
+      const e = 132 + i * 12; if (e + 12 > p.length) break;
+      const o = be32(p, e + 4), len = be32(p, e + 8);
+      if (o >= 128 && len >= 8 && o + len <= p.length && !tags.has(ascii(p, e, 4))) tags.set(ascii(p, e, 4), { o, n: len, type: ascii(p, o, 4) });
+    }
+    return tags;
+  }
+  function iccText(p, t) {   // text of a 'desc' (v2), 'text' or 'mluc' (v4) tag
+    if (!t) return '';
+    const o = t.o, end = t.o + t.n, strip = s => clip(s.replace(/\u0000[\s\S]*$/, ''), 120);
+    if (t.type === 'text') return strip(latin1(p.subarray(o + 8, end)));
+    if (t.type === 'desc' && t.n >= 12) return strip(latin1(p.subarray(o + 12, Math.min(end, o + 12 + be32(p, o + 8)))));
+    if (t.type === 'mluc' && t.n >= 16) {
+      const count = Math.min(be32(p, o + 8), 100), size = be32(p, o + 12); let best = '';
+      for (let i = 0; i < count && size >= 12; i++) {
+        const r = o + 16 + i * size; if (r + 12 > end) break;
+        const len = be32(p, r + 4), at = o + be32(p, r + 8); if (at + len > end) continue;
+        const s = strip(new TextDecoder('utf-16be').decode(p.subarray(at, at + (len & ~1))));
+        if (s && (!best || ascii(p, r, 4) === 'enUS')) best = s;
+      }
+      return best;
+    }
+    return '';
+  }
+  function blankText(p, t) {   // empties a text tag in place, keeping its length and structure
+    const o = t.o, end = t.o + t.n;
+    if (t.type === 'text') p.fill(0, o + 8, end);
+    else if (t.type === 'desc') p.fill(0, Math.min(end, o + 12), end);
+    else if (t.type === 'mluc' && t.n >= 16) {
+      const count = Math.min(be32(p, o + 8), 100), size = be32(p, o + 12);
+      for (let i = 0; i < count && size >= 12; i++) { const r = o + 16 + i * size; if (r + 12 > end) break; p.fill(0, r + 4, r + 8); }
+      p.fill(0, Math.min(end, o + 16 + count * size), end);
+    }
+  }
+  // what to do with a profile: { kind: 'srgb' | 'other' | 'bad', name, details: [what is revealing], bytes: blanked copy }
+  function iccPlan(p) {
+    if (!p || p.length < 132 || !startsWith(p, 36, 'acsp') || be32(p, 0) > p.length) return { kind: 'bad', name: '', details: [] };
+    const tags = iccTags(p), name = iccText(p, tags.get('desc'));
+    const xyz = sig => { const t = tags.get(sig); return t && t.type === 'XYZ ' && t.n >= 20 ? [s15(p, t.o + 8), s15(p, t.o + 12), s15(p, t.o + 16)] : null; };
+    const isSrgb = ascii(p, 16, 4) === 'RGB ' && /srgb/i.test(name)
+      && Object.keys(SRGB_D50).every(sig => { const v = xyz(sig); return v && v.every((x, i) => Math.abs(x - SRGB_D50[sig][i]) < 0.0015); });
+    if (isSrgb) return { kind: 'srgb', name, details: [], intent: p[67] & 3 };
+    const q = p.slice(), details = [], zero = (a, b) => q.fill(0, a, b), nonzero = (a, b) => p.subarray(a, b).some(x => x);
+    if (nonzero(24, 36)) {
+      const d = i => String(be16(p, 24 + i * 2)).padStart(2, '0');
+      details.push(`made ${d(0)}-${d(1)}-${d(2)} ${d(3)}:${d(4)}`); zero(24, 36);
+    }
+    const codes = [];
+    for (const at of [4, 40, 48, 52, 80]) if (nonzero(at, at + 4)) { const c = clip(latin1(p.subarray(at, at + 4)).replace(/[^\x20-\x7e]/g, ''), 8); if (c && !codes.includes(c)) codes.push(c); zero(at, at + 4); }
+    if (codes.length) details.push('app and device codes ' + codes.join(', '));
+    for (const sig of ['cprt', 'dmnd', 'dmdd']) {
+      const t = tags.get(sig); if (!t) continue;
+      const s = iccText(p, t); if (s) details.push(s);
+      if (s || nonzero(t.o + 8, t.o + t.n)) blankText(q, t);
+    }
+    const calt = tags.get('calt'); if (calt && calt.type === 'dtim' && calt.n >= 20 && nonzero(calt.o + 8, calt.o + 20)) { details.push('calibration date'); zero(calt.o + 8, calt.o + 20); }
+    const changed = !same(p, q);
+    if (changed) zero(84, 100);   // the profile ID is a checksum of the original: it would no longer match
+    return { kind: 'other', name, details, changed, bytes: q };
+  }
+  function iccFindings(plan, out) {
+    if (!plan) return out;
+    if (plan.kind === 'bad') addOnce(out, F('icc', 'Colour profile', 'damaged', 'low', { note: 'Viewers ignore a damaged colour profile, so it is removed.' }));
+    else if (plan.kind === 'srgb') addOnce(out, F('icc', 'Colour profile', plan.name, 'low', { note: 'Standard sRGB, which viewers assume anyway, so the colours stay the same.' }));
+    else {
+      addOnce(out, F('icc', 'Colour profile', plan.name, 'low', { keep: 'always', note: 'Kept so colours look right.' }));
+      if (plan.changed) addOnce(out, F('iccdetails', 'Colour profile details', plan.details.join('; ') || 'creation details', 'low', { note: 'When and with what the profile was made. Blanked; the colours are not affected.' }));
+    }
+    return out;
+  }
+
   // ---------- JPEG ----------
   function jpegSegments(b) {
     if (!(b[0] === 0xff && b[1] === 0xd8)) throw new Error('Not a JPEG file');
@@ -702,6 +792,18 @@ html:not(.native) .native-only{display:none}
     if (m >= 0xe0 && m <= 0xef) return 'app' + (m - 0xe0);
     return null;
   }
+  // a JPEG colour profile may be split over several APP2 segments, numbered 1..count
+  function jpegIcc(b, segs) {
+    const parts = segs.filter(s => appId(b, s) === 'icc');
+    if (!parts.length) return null;
+    const ordered = parts.length === 1 ? parts : parts.slice().sort((x, y) => b[x.d + 12] - b[y.d + 12]);
+    const ok = ordered.every((s, i) => s.e >= s.d + 14 && (parts.length === 1 || (b[s.d + 12] === i + 1 && b[s.d + 13] === parts.length)));
+    return { parts, ordered, plan: ok ? iccPlan(concat(ordered.map(s => b.subarray(s.d + 14, s.e)))) : { kind: 'bad', name: '', details: [] } };
+  }
+  function jpegIccSegments(b, icc) {   // the blanked profile, back in segments of the same sizes
+    let at = 0;
+    return icc.ordered.map(s => { const seg = b.slice(s.s, s.e), n = s.e - s.d - 14; seg.set(icc.plan.bytes.subarray(at, at + n), s.d - s.s + 14); at += n; return seg; });
+  }
   function inspectJpeg(b, where) {
     const { segs, trailing, truncated } = jpegSegments(b);
     let out = [], keep = {};
@@ -711,7 +813,7 @@ html:not(.native) .native-only{display:none}
       else if (id === 'xmp') out = out.concat(xmpFindings(text(b.subarray(s.d + 29, s.e)), where));
       else if (id === 'xmpext') addOnce(out, F('xmp', 'XMP metadata', 'extended block', 'low'));
       else if (id === 'photoshop') out = out.concat(photoshopFindings(b, s.d + 14, s.e));
-      else if (id === 'icc') addOnce(out, F('icc', 'Colour profile', 'kept so colours look right', 'low', { keep: 'always' }));
+      else if (id === 'icc') continue;   // handled below, once all its parts are known
       else if (id === 'mpf') addOnce(out, F('mpf', 'Extra embedded images', 'previews, depth maps or other hidden pictures', 'medium'));
       else if (id === 'jumbf') addOnce(out, F('c2pa', 'Content Credentials', 'a signed record of where the image came from and how it was edited', 'medium'));
       else if (id === 'com') addOnce(out, F('comment', 'Comment', text(b.subarray(s.d, s.e)), 'medium'));
@@ -719,6 +821,7 @@ html:not(.native) .native-only{display:none}
       else if (id === 'jfxx') addOnce(out, F('thumb', 'Embedded thumbnail', 'a small copy of the original picture', 'high', { note: 'It can still show parts of the photo you cropped out or edited.' }));
       else addOnce(out, F('appdata', 'Other app data', 'private data added by a camera or app', 'low'));
     }
+    const icc = jpegIcc(b, segs); if (icc) iccFindings(icc.plan, out);
     if (trailing > 16) {
       const tail = b.subarray(b.length - trailing);
       const video = indexOf(tail, 'ftyp') >= 0 && indexOf(tail, 'ftyp') < 64 || indexOf(tail, 'ftypmp4') >= 0 || indexOf(tail, 'ftypisom') >= 0;
@@ -729,6 +832,7 @@ html:not(.native) .native-only{display:none}
   function cleanJpeg(b, opts, keepIn) {
     const { segs, end } = jpegSegments(b);
     const keep = keepIn || inspectJpeg(b).keep;
+    const icc = jpegIcc(b, segs);
     const exif = buildExif(keep, opts || {});
     const parts = [b.subarray(0, 2)];
     let inserted = false;
@@ -737,7 +841,8 @@ html:not(.native) .native-only{display:none}
       const id = appId(b, s);
       if (id === 'jfif') { parts.push(b.subarray(s.s, s.e)); continue; }
       if (!inserted && id !== 'jfif') addExif();
-      if (id === null || id === 'icc' || id === 'adobe') parts.push(b.subarray(s.s, s.e));
+      if (id === 'icc') { if (icc.plan.kind === 'other' && s === icc.parts[0]) parts.push(...jpegIccSegments(b, icc)); }
+      else if (id === null || id === 'adobe') parts.push(b.subarray(s.s, s.e));
     }
     addExif();
     parts.push(end > 0 ? b.subarray(end - 2, end) : new Uint8Array([0xff, 0xd9]));
@@ -787,6 +892,14 @@ html:not(.native) .native-only{display:none}
     for (let i = 0; i < a.length; i++) a[i] = parseInt(hex.substr(i * 2, 2), 16);
     return a;
   };
+  // iCCP: profile name, 0, compression method 0, zlib data. null when this browser can't decompress (left as it is)
+  async function pngIcc(b, c) {
+    const d = b.subarray(c.d, c.d + c.n), z = d.indexOf(0), bad = { name: null, plan: { kind: 'bad', name: '', details: [] } };
+    if (z < 1 || z > 79 || d[z + 1] !== 0) return bad;
+    if (typeof DecompressionStream === 'undefined') return null;
+    const raw = await inflate(d.subarray(z + 2));
+    return raw ? { name: d.subarray(0, z), plan: iccPlan(raw) } : bad;
+  }
   async function inspectPng(b) {
     const { chunks, trailing } = pngChunks(b);
     let out = [], keep = {};
@@ -810,7 +923,7 @@ html:not(.native) .native-only{display:none}
     for (const c of chunks) {
       if (c.type === 'eXIf') { const r = exifFindings(parseTiff(b.subarray(c.d, c.d + c.n))); out = out.concat(r.findings); keep = Object.assign(keep, r.keep); }
       else if (c.type === 'tIME') { const d = b.subarray(c.d); addOnce(out, F('timemod', 'Date modified', `${be16(d, 0)}-${String(d[2]).padStart(2, '0')}-${String(d[3]).padStart(2, '0')} ${String(d[4]).padStart(2, '0')}:${String(d[5]).padStart(2, '0')}`, 'medium')); }
-      else if (c.type === 'iCCP' || c.type === 'sRGB' || c.type === 'cICP') addOnce(out, F('icc', 'Colour profile', 'kept so colours look right', 'low', { keep: 'always' }));
+      else if (c.type === 'iCCP') { const icc = await pngIcc(b, c); if (icc) iccFindings(icc.plan, out); else addOnce(out, F('icc', 'Colour profile', '', 'low', { keep: 'always', note: 'Kept so colours look right.' })); }
       else if (c.type === 'caBX') addOnce(out, F('c2pa', 'Content Credentials', 'a signed record of where the image came from and how it was edited', 'medium'));
       else if (/^[a-z]/.test(c.type) && !PNG_KEEP.has(c.type) && !/^(tEXt|zTXt|iTXt)$/.test(c.type)) addOnce(out, F('appdata', 'Other app data', 'private data added by an app (' + clip(c.type, 8) + ')', 'low'));
     }
@@ -833,10 +946,15 @@ html:not(.native) .native-only{display:none}
     if (exif) extra.push(pngChunk('eXIf', exif));
     if (opts.keepCopyright && keep.pngCopyright && !(exif && keep.copyright)) extra.push(pngChunk('tEXt', concat([enc('Copyright\0'), enc(keep.pngCopyright.slice(0, 200))])));
     if (opts.keepDate && keep.pngDate && !(exif && keep.date)) extra.push(pngChunk('tEXt', concat([enc('Creation Time\0'), enc(keep.pngDate.slice(0, 64))])));
-    const parts = [b.subarray(0, 8)];
+    const parts = [b.subarray(0, 8)], hasSrgb = chunks.some(c => c.type === 'sRGB' || c.type === 'cICP');
     for (const c of chunks) {
       const critical = /^[A-Z]/.test(c.type);
-      if (critical || PNG_KEEP.has(c.type)) parts.push(b.subarray(c.s, c.e));
+      if (c.type === 'iCCP') {
+        const icc = await pngIcc(b, c), plan = icc && icc.plan;
+        if (!plan || (plan.kind === 'other' && !plan.changed)) parts.push(b.subarray(c.s, c.e));
+        else if (plan.kind === 'srgb' && !hasSrgb) parts.push(pngChunk('sRGB', new Uint8Array([plan.intent])));   // says "sRGB" in one byte, so any gAMA or cHRM chunk stays ignored
+        else if (plan.kind === 'other') { const z = await deflate(plan.bytes); parts.push(z ? pngChunk('iCCP', concat([icc.name, new Uint8Array(2), z])) : b.subarray(c.s, c.e)); }
+      } else if (critical || PNG_KEEP.has(c.type)) parts.push(b.subarray(c.s, c.e));
       if (c.type === 'IHDR') parts.push(...extra);
     }
     return concat(parts);
@@ -862,7 +980,7 @@ html:not(.native) .native-only{display:none}
         let t = b.subarray(c.d, c.d + c.n); if (startsWith(t, 0, 'Exif\0')) t = t.subarray(6);
         const r = exifFindings(parseTiff(t)); out = out.concat(r.findings); keep = Object.assign(keep, r.keep);
       } else if (c.type === 'XMP ') out = out.concat(xmpFindings(text(b.subarray(c.d, c.d + c.n))));
-      else if (c.type === 'ICCP') addOnce(out, F('icc', 'Colour profile', 'kept so colours look right', 'low', { keep: 'always' }));
+      else if (c.type === 'ICCP') iccFindings(iccPlan(b.subarray(c.d, c.d + c.n)), out);
       else if (!['VP8X', 'VP8 ', 'VP8L', 'ALPH', 'ANIM', 'ANMF'].includes(c.type)) addOnce(out, F('appdata', 'Other app data', 'private data added by an app', 'low'));
     }
     if (trailing > 16) addOnce(out, F('trailing', 'Hidden data after the picture', kb(trailing) + ' of extra data stored after the image', 'high'));
@@ -873,13 +991,17 @@ html:not(.native) .native-only{display:none}
     const { keep } = inspectWebp(b);
     const hasX = chunks.length && chunks[0].type === 'VP8X';
     const exif = hasX ? buildExif(keep, opts) : null;   // a simple WebP has no room for metadata: nothing to keep
+    const iccChunk = hasX && chunks.find(c => c.type === 'ICCP'), plan = iccChunk ? iccPlan(b.subarray(iccChunk.d, iccChunk.d + iccChunk.n)) : null;
+    const keepIcc = plan && plan.kind === 'other';
     const parts = [];
     for (const c of chunks) {
       if (c.type === 'VP8X') {
         const x = b.slice(c.s, c.e);
-        x[8] = (x[8] & ~0x0c) | (exif ? 0x08 : 0);   // clear the EXIF and XMP flags (set EXIF again if we add one)
+        x[8] = (x[8] & ~0x2c) | (exif ? 0x08 : 0) | (keepIcc ? 0x20 : 0);   // clear the EXIF and XMP flags (set EXIF again if we add one); ICC only if kept
         parts.push(x);
-      } else if (['VP8 ', 'VP8L', 'ALPH', 'ANIM', 'ANMF', 'ICCP'].includes(c.type)) parts.push(b.subarray(c.s, c.e));
+      } else if (c.type === 'ICCP') {
+        if (c === iccChunk && keepIcc) { const x = b.slice(c.s, c.e); x.set(plan.bytes, 8); parts.push(x); }
+      } else if (['VP8 ', 'VP8L', 'ALPH', 'ANIM', 'ANMF'].includes(c.type)) parts.push(b.subarray(c.s, c.e));
     }
     if (exif) { const h = new Uint8Array(8); h.set(enc('EXIF')); h[4] = exif.length & 255; h[5] = (exif.length >> 8) & 255; h[6] = (exif.length >> 16) & 255; h[7] = exif.length >>> 24; parts.push(h, exif); if (exif.length & 1) parts.push(new Uint8Array(1)); }
     const body = concat(parts), head = new Uint8Array(12), n = body.length + 4;
@@ -1008,7 +1130,7 @@ html:not(.native) .native-only{display:none}
       try {
         const jpg = pdfJpeg(o, K, lib); if (!jpg) continue;
         const r = inspectJpeg(jpg);
-        const real = r.findings.filter(f => f.keep !== 'always');
+        const real = r.findings.filter(f => f.keep !== 'always' && !/^icc/.test(f.id));
         if (real.length) { photos++; if (real.some(f => f.id === 'gps')) photoGps++; }
       } catch (e) { /* not a readable JPEG: leave it */ }
     }
@@ -1060,7 +1182,7 @@ html:not(.native) .native-only{display:none}
       try {
         const before = pdfJpeg(o, K, lib); if (!before) continue;
         const after = cleanJpeg(before, {}, {});   // PDF readers ignore the rotation tag, so nothing is kept
-        if (after.length === before.length && o.getContents() === before) continue;
+        if (o.getContents() === before && same(after, before)) continue;
         const d = o.dict.clone(ctx);
         d.set(K.N('Filter'), K.N('DCTDecode'));
         const p = o.dict.lookup(K.N('DecodeParms'));
@@ -1382,7 +1504,7 @@ if (NATIVE) (() => {
     else if (f.out) {
       const left = f.out.leftover, kept = f.out.kept.filter(x => x.keep !== 'always' || /orientation|icc/.test(x.id));
       st.innerHTML = `<span class="chip ok"><i></i>Cleaned</span>`
-        + `<p>${f.out.removedCount ? `Removed ${plural(f.out.removedCount, 'item')}. ` : 'Nothing needed removing. '}${size(f.size)} → ${size(f.out.bytes.length)}.</p>`
+        + `<p>${f.out.removedCount ? `${f.out.removedCount} removed, ${f.out.keptCount} kept. ` : 'Nothing needed removing. '}${size(f.size)} → ${size(f.out.bytes.length)}.</p>`
         + (left.length ? `<p class="warn">Still inside: ${esc(left.map(x => x.label).join(', '))}. Please report this file type to us.</p>` : '<p>Checked again: nothing else found.</p>')
         + (kept.length ? `<p>Kept: ${esc([...new Set(kept.map(x => x.label))].join(', '))}.</p>` : '');
     } else if (state.phase === 'cleaning') st.innerHTML = '<span class="chip busy"><i></i>Cleaning…</span>';
@@ -1486,7 +1608,7 @@ if (NATIVE) (() => {
         else name = /\.[A-Za-z0-9]{2,5}$/.test(f.name) ? f.name : `${f.name}.${ext}`;
         let n = name, k = 2; while (used.has(n.toLowerCase())) { n = name.replace(/(\.[^.]+)?$/, m => ` (${k})${m}`); k++; }
         used.add(n.toLowerCase());
-        f.out = { bytes: r.bytes, name: n, mime: f.det.mime, leftover, kept, removedCount: allFindings(f).filter(x => removed(x, f)).length };
+        f.out = { bytes: r.bytes, name: n, mime: f.det.mime, leftover, kept, removedCount: allFindings(f).filter(x => removed(x, f)).length, keptCount: allFindings(f).filter(x => !removed(x, f)).length };
       } catch (e) {
         f.cleanError = 'Cleaning failed: ' + (e && e.message || e);
       }

@@ -16,6 +16,8 @@ small = Image.new('RGB', (64, 48), (90, 160, 90))
 small.save('icc.jpg', quality=85, icc_profile=ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes())
 small.save('plain.jpg', quality=85)
 EOF
+# colour profiles: Display P3 (with made-up maker and device details) and sRGB, in JPEG, PNG and WebP
+python3 make-icc.py
 
 # a phone photo with everything: location, names, serial numbers, XMP, IPTC, comment, thumbnail
 $ET -q -overwrite_original -GPSLatitude=51.50072 -GPSLatitudeRef=N -GPSLongitude=0.12462 -GPSLongitudeRef=W -GPSAltitude=21 \

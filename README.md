@@ -11,7 +11,8 @@ was deleted from it) and makes a clean copy without it. No account, no server, n
 - **Photos (JPEG, PNG, WebP):** removes location, names, phone and camera details, serial numbers, dates and time zone,
   embedded thumbnails (which can show what you cropped out), motion-photo video clips, edit history, document IDs,
   comments and keywords. **Lossless:** the picture data is copied byte for byte; only the rotation and colour profile
-  are kept, so the photo still looks right.
+  are kept, so the photo still looks right. A standard sRGB profile is removed (colours stay the same); any other
+  profile keeps its colour data but loses its creation date, maker codes and copyright text.
 - **PDFs:** removes document information (author, app, dates), XMP metadata, **earlier saved versions** that can hold
   deleted text, page thumbnails, private app data, and camera data inside placed photos. Attached files, scripts and
   comments (with their authors' names) are removed by choice.

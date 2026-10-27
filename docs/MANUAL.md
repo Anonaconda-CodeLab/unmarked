@@ -66,11 +66,15 @@ Removed:
 - **Edit history**, document IDs and other data added by editing apps
 - **Comments, titles, descriptions and keywords**
 - Camera settings (exposure, ISO and similar) and other technical data
+- **Standard sRGB colour profiles**: apps and browsers assume sRGB when a picture has no profile, so the colours stay
+  exactly the same
 
 Kept, because they are harmless and needed to show the picture correctly:
 
 - **Rotation**: so the photo appears the right way up
-- **Colour profile**: so colours look right
+- **Other colour profiles** (for example Display P3 from newer phones): so colours look right. The details inside
+  that can give something away are blanked: when the profile was made (some apps stamp the moment the photo was
+  saved), the app, maker and model codes, and any copyright or device text. These play no part in the colours.
 
 Cleaning is **lossless**. Unmarked cuts the hidden data out of the file without touching the picture itself, so
 there is no recompression and no loss of quality.
@@ -142,4 +146,5 @@ Questions, problems or ideas: email **hello@anonacondacodelab.com**. Describe wh
 screenshot. Please don't send the files you were cleaning; a description is usually enough.
 
 Unmarked is free and open-source software from Anonaconda Code Lab, released under the GNU General Public License v3.
-If it is useful to you, you can support its development at **https://ko-fi.com/anonacondacodelab**.
+No ads, no tracking. If you find this app useful, please consider making a small donation to help fund development:
+**https://ko-fi.com/anonacondacodelab**. Thank you!

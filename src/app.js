@@ -147,7 +147,7 @@
     else if (f.out) {
       const left = f.out.leftover, kept = f.out.kept.filter(x => x.keep !== 'always' || /orientation|icc/.test(x.id));
       st.innerHTML = `<span class="chip ok"><i></i>Cleaned</span>`
-        + `<p>${f.out.removedCount ? `Removed ${plural(f.out.removedCount, 'item')}. ` : 'Nothing needed removing. '}${size(f.size)} → ${size(f.out.bytes.length)}.</p>`
+        + `<p>${f.out.removedCount ? `${f.out.removedCount} removed, ${f.out.keptCount} kept. ` : 'Nothing needed removing. '}${size(f.size)} → ${size(f.out.bytes.length)}.</p>`
         + (left.length ? `<p class="warn">Still inside: ${esc(left.map(x => x.label).join(', '))}. Please report this file type to us.</p>` : '<p>Checked again: nothing else found.</p>')
         + (kept.length ? `<p>Kept: ${esc([...new Set(kept.map(x => x.label))].join(', '))}.</p>` : '');
     } else if (state.phase === 'cleaning') st.innerHTML = '<span class="chip busy"><i></i>Cleaning…</span>';
@@ -251,7 +251,7 @@
         else name = /\.[A-Za-z0-9]{2,5}$/.test(f.name) ? f.name : `${f.name}.${ext}`;
         let n = name, k = 2; while (used.has(n.toLowerCase())) { n = name.replace(/(\.[^.]+)?$/, m => ` (${k})${m}`); k++; }
         used.add(n.toLowerCase());
-        f.out = { bytes: r.bytes, name: n, mime: f.det.mime, leftover, kept, removedCount: allFindings(f).filter(x => removed(x, f)).length };
+        f.out = { bytes: r.bytes, name: n, mime: f.det.mime, leftover, kept, removedCount: allFindings(f).filter(x => removed(x, f)).length, keptCount: allFindings(f).filter(x => !removed(x, f)).length };
       } catch (e) {
         f.cleanError = 'Cleaning failed: ' + (e && e.message || e);
       }

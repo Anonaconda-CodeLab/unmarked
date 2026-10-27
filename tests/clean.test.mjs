@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import zlib from 'node:zlib';
 // both files are plain browser scripts (the page inlines them): run them as scripts, as the browser does
 const load = f => vm.runInThisContext(readFileSync(new URL(f, import.meta.url), 'utf8'), { filename: f });
 load('../src/vendor/pdf-lib.min.js');
@@ -56,13 +57,72 @@ test('JPEG: motion photo clip after the picture is removed', async () => {
   assert.equal(out[out.length - 2], 0xff); assert.equal(out[out.length - 1], 0xd9);
 });
 
-test('JPEG: colour profile is kept, nothing found in a plain file', async () => {
+test('JPEG: a plain sRGB profile is removed, nothing found in a plain file', async () => {
+  const r = await C.inspect(fx('icc.jpg'), base);
+  assert.ok(C.isRemoved(r.findings.find(f => f.id === 'icc'), {}));
   const out = (await C.clean(fx('icc.jpg'), base)).bytes;
-  assert.deepEqual(ids(await C.inspect(out, base)), ['icc']);
-  assert.ok(has(out, 'ICC_PROFILE'));
+  assert.deepEqual(ids(await C.inspect(out, base)), []);
+  assert.ok(!has(out, 'ICC_PROFILE'));
   const plain = fx('plain.jpg');
   assert.equal((await C.inspect(plain, base)).findings.length, 0);
   assert.ok(Buffer.from((await C.clean(plain, base)).bytes).equals(Buffer.from(plain)));
+});
+
+// colour profiles (fixtures from make-icc.py; tests/fixtures/check-colours.sh checks with Pillow/lcms that colours convert identically)
+const REVEALING = ['Example Display', 'SN-998877', 'APPL', 'EXDC', 'P3X1', 'exmp'];
+const profileOf = {   // the profile bytes inside a file, whatever the format
+  jpeg: b => { const s = C._internal.jpegSegments(b).segs.filter(x => x.m === 0xe2 && has(b.subarray(x.d, x.d + 12), 'ICC_PROFILE')); return s.length ? Buffer.concat(s.sort((x, y) => b[x.d + 12] - b[y.d + 12]).map(x => Buffer.from(b.subarray(x.d + 14, x.e)))) : null; },
+  webp: b => { const c = C._internal.webpChunks(b).chunks.find(x => x.type === 'ICCP'); return c ? Buffer.from(b.subarray(c.d, c.d + c.n)) : null; },
+  png: b => { const c = C._internal.pngChunks(b).chunks.find(x => x.type === 'iCCP'); if (!c) return null; const d = Buffer.from(b.subarray(c.d, c.d + c.n)); return zlib.inflateSync(d.subarray(d.indexOf(0) + 2)); }
+};
+for (const [file, type] of [['p3.jpg', 'jpeg'], ['p3.png', 'png'], ['p3.webp', 'webp']]) {
+  test(`${type.toUpperCase()}: another profile is kept, its revealing fields blanked`, async () => {
+    const src = fx(file), r = await C.inspect(src, base);
+    assert.deepEqual(r.findings.map(f => [f.id, C.isRemoved(f, {})]).sort(), [['icc', false], ['iccdetails', true]]);
+    assert.equal(r.findings.find(f => f.id === 'icc').value, 'Display P3');
+    assert.match(r.findings.find(f => f.id === 'iccdetails').value, /made 2026-10-24 07:59.*APPL.*Example Display Co.*SN-998877.*calibration/);
+    const out = (await C.clean(src, base)).bytes, again = await C.inspect(out, base);
+    assert.deepEqual(ids(again), ['icc'], 'nothing left to remove, so no "still inside" warning');
+    const before = profileOf[type](src), after = profileOf[type](out);
+    assert.equal(after.length, before.length, 'same length');
+    for (const s of REVEALING) assert.ok(!after.includes(Buffer.from(s)) && !after.includes(Buffer.from(s, 'utf16le').swap16()), 'still contains ' + s);
+    assert.ok(after.subarray(24, 36).equals(Buffer.alloc(12)), 'creation date blanked');
+    assert.ok(after.subarray(84, 100).equals(Buffer.alloc(16)), 'profile ID cleared');
+    assert.ok(after.subarray(128).length && after.includes(Buffer.from('rXYZ')), 'colour tags still there');
+    // everything outside the blanked fields is unchanged
+    const diff = []; for (let i = 0; i < before.length; i++) if (before[i] !== after[i]) diff.push(i);
+    assert.ok(diff.every(i => (i >= 4 && i < 8) || (i >= 24 && i < 36) || (i >= 40 && i < 44) || (i >= 48 && i < 56) || (i >= 80 && i < 100) || i >= 128));
+    if (type === 'webp') assert.equal(out[C._internal.webpChunks(out).chunks[0].d] & 0x20, 0x20, 'ICC flag still set');
+    if (type === 'jpeg') assert.equal(C._internal.jpegSegments(out).segs.filter(x => x.m === 0xe2).length, 3, 'still in three parts');
+    // cleaning again changes nothing more
+    assert.ok(Buffer.from((await C.clean(out, base)).bytes).equals(Buffer.from(out)));
+  });
+}
+
+test('PNG and WebP: a plain sRGB profile is removed; a bare sRGB chunk is not listed', async () => {
+  for (const file of ['srgb.png', 'srgb.webp']) {
+    const r = await C.inspect(fx(file), base);
+    assert.deepEqual(r.findings.map(f => [f.id, f.value, C.isRemoved(f, {})]), [['icc', 'sRGB built-in', true]]);
+    const out = (await C.clean(fx(file), base)).bytes;
+    assert.deepEqual(ids(await C.inspect(out, base)), []);
+    assert.ok(!has(out, 'iCCP') && !has(out, 'ICCP') && !has(out, 'sRGB built-in'));
+  }
+  const png = (await C.clean(fx('srgb.png'), base)).bytes;
+  const s = C._internal.pngChunks(png).chunks.find(c => c.type === 'sRGB');
+  assert.ok(s && s.n === 1, 'replaced by a one-byte sRGB chunk, so a gAMA or cHRM chunk could not change the colours');
+  const webp = (await C.clean(fx('srgb.webp'), base)).bytes;
+  assert.equal(webp[C._internal.webpChunks(webp).chunks[0].d] & 0x20, 0, 'ICC flag cleared');
+  assert.equal(new DataView(webp.buffer, webp.byteOffset).getUint32(4, true), webp.length - 8, 'RIFF size');
+  assert.deepEqual((await C.inspect(fx('srgb-chunk.png'), base)).findings, []);
+  assert.ok(Buffer.from((await C.clean(fx('srgb-chunk.png'), base)).bytes).equals(Buffer.from(fx('srgb-chunk.png'))));
+});
+
+test('JPEG: a profile split into parts that do not fit together is removed', async () => {
+  const b = fx('p3.jpg').slice(), s = C._internal.jpegSegments(b).segs.find(x => x.m === 0xe2);
+  b[s.d + 12] = 9;   // part number out of range
+  const r = await C.inspect(b, base);
+  assert.deepEqual(r.findings.map(f => [f.id, f.value, C.isRemoved(f, {})]), [['icc', 'damaged', true]]);
+  assert.ok(!has((await C.clean(b, base)).bytes, 'ICC_PROFILE'));
 });
 
 test('options: keep the date taken and the copyright notice', async () => {
@@ -157,7 +217,7 @@ test('zip: stored files, fixed dates, duplicate names renamed', () => {
 });
 
 test('damaged and hostile files never crash inspection', async () => {
-  const files = ['photo-full.jpg', 'motion.jpg', 'image.png', 'image.webp', 'doc.pdf', 'icc.jpg'];
+  const files = ['photo-full.jpg', 'motion.jpg', 'image.png', 'image.webp', 'doc.pdf', 'icc.jpg', 'p3.jpg', 'p3.png', 'p3.webp'];
   let seed = 7; const rnd = n => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) % n;
   for (const f of files) {
     const src = fx(f);
