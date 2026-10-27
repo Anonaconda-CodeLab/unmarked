@@ -18,6 +18,8 @@ small.save('plain.jpg', quality=85)
 EOF
 # colour profiles: Display P3 (with made-up maker and device details) and sRGB, in JPEG, PNG and WebP
 python3 make-icc.py
+# hidden data in the less common places: signatures, XFA, form buttons, threads, reserved image markers
+python3 make-security.py
 
 # a phone photo with everything: location, names, serial numbers, XMP, IPTC, comment, thumbnail
 $ET -q -overwrite_original -GPSLatitude=51.50072 -GPSLatitudeRef=N -GPSLongitude=0.12462 -GPSLongitudeRef=W -GPSAltitude=21 \

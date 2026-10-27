@@ -174,8 +174,10 @@ test('PDF: cleaned copy has one version, no info, and the chosen extras removed'
   const out = (await C.clean(fx('doc-rev.pdf'), ALL)).bytes;
   assert.equal(C._internal.countRevisions(out), 1);
   assert.deepEqual(ids(await C.inspect(out, base)), []);
+  const before = await pdfStrings(fx('doc-rev.pdf')), after = await pdfStrings(out);   // unpacked: cleaned PDFs use compressed object streams
   for (const s of ['Jane', 'Second Author', 'Bob Reviewer', 'bank-details', '12345678', 'app.alert', 'Microsoft Word', 'pikepdf', 'secret'])
-    assert.ok(!has(out, s), 'still contains ' + s);
+    assert.ok(!after.includes(s), 'still contains ' + s);
+  for (const s of ['Second Author', 'Bob Reviewer', 'bank-details', 'app.alert']) assert.ok(before.includes(s), 'the test file holds ' + s);
   const doc = await PDFLib.PDFDocument.load(out, { updateMetadata: false });
   assert.equal(doc.getPageCount(), 2);
   assert.equal(doc.context.trailerInfo.Info, undefined);
@@ -189,6 +191,126 @@ test('PDF: attachments, scripts and comments stay when not chosen', async () => 
   const r = await C.inspect(out, base);
   assert.deepEqual(ids(r).sort(), ['attachments', 'commentauthors', 'comments', 'scripts']);
   assert.ok(!r.findings.some(f => C.isRemoved(f, { removeAttachments: false, removeScripts: false, removeComments: false })));
+});
+
+// ---------- 0.1.3: hidden data in the less common places (fixtures from make-security.py) ----------
+// every string in a PDF, with object streams and other compressed streams unpacked (a plain byte search can't see them)
+const pdfStrings = async b => {
+  const doc = await PDFLib.PDFDocument.load(b, { updateMetadata: false, throwOnInvalidObject: false }), out = [];
+  const add = o => {
+    if (o instanceof PDFLib.PDFString || o instanceof PDFLib.PDFHexString) out.push(o.decodeText());
+    else if (o instanceof PDFLib.PDFName) out.push(o.decodeText());
+    else if (o instanceof PDFLib.PDFDict) for (const [, v] of o.entries()) add(v);
+    else if (o instanceof PDFLib.PDFArray) o.asArray().forEach(add);
+    else if (o instanceof PDFLib.PDFRawStream) { add(o.dict); try { out.push(Buffer.from(PDFLib.decodePDFRawStream(o).decode()).toString('latin1')); } catch (e) { out.push(Buffer.from(o.getContents()).toString('latin1')); } }
+    else if (o instanceof PDFLib.PDFStream) { add(o.dict); out.push(Buffer.from(o.getContents()).toString('latin1')); }
+  };
+  for (const [, o] of doc.context.enumerateIndirectObjects()) add(o);
+  return out.join('\n');
+};
+const loadOut = async b => PDFLib.PDFDocument.load(b, { updateMetadata: false });
+const N = n => PDFLib.PDFName.of(n);
+
+test('PDF: a digital signature is listed with the signer’s details, and removed', async () => {
+  const r = await C.inspect(fx('signed.pdf'), base), sig = r.findings.find(f => f.id === 'signature');
+  assert.ok(sig && sig.risk === 'high' && C.isRemoved(sig, {}));
+  assert.equal(sig.value, 'Jane Signer, 2026-10-20 10:10, Bangkok, jane.signer@example.com, I approve this document');
+  assert.match(sig.note, /signature is removed.*invalid anyway/);
+  const out = (await C.clean(fx('signed.pdf'), base)).bytes;   // removed whatever the PDF options are
+  const before = await pdfStrings(fx('signed.pdf')), after = await pdfStrings(out);
+  for (const s of ['Jane Signer', 'jane.signer', 'Bangkok', 'I approve', 'Digitally signed', 'CN=']) {
+    assert.ok(before.includes(s), 'the test file holds ' + s);
+    assert.ok(!after.includes(s), 'still contains ' + s);
+  }
+  assert.deepEqual(ids(await C.inspect(out, base)), ['forms']);
+  const doc = await loadOut(out), cat = doc.catalog, af = cat.lookup(N('AcroForm'));
+  assert.ok(!cat.has(N('DSS')) && !cat.has(N('Perms')) && !af.has(N('SigFlags')));
+  const field = af.lookup(N('Fields')).lookup(1);
+  assert.equal(String(field.lookup(N('FT'))), '/Sig', 'the empty signature field stays');
+  assert.ok(!field.has(N('V')) && !field.has(N('AP')));
+  assert.equal(doc.getPageCount(), 1);
+});
+
+test('PDF: XFA form scripts are removed with “Remove scripts”; an XFA-only form is kept and listed', async () => {
+  const r = await C.inspect(fx('xfa.pdf'), base);
+  assert.equal(r.options.scripts, true);
+  assert.match(r.findings.find(f => f.id === 'scripts').value, /JavaScript.*sends the form to forms\.example\.com/);
+  const af = async b => (await loadOut(b)).catalog.lookup(N('AcroForm'));
+  assert.ok((await pdfStrings(fx('xfa.pdf'))).includes('xfa ran'));
+  assert.ok(!(await pdfStrings((await C.clean(fx('xfa.pdf'), ALL)).bytes)).includes('xfa ran'), 'the script is gone');
+  assert.ok(!(await af((await C.clean(fx('xfa.pdf'), ALL)).bytes)).has(N('XFA')), 'XFA removed');
+  const kept = (await C.clean(fx('xfa.pdf'), base)).bytes;   // "Remove scripts" unticked
+  assert.ok((await af(kept)).has(N('XFA')));
+  assert.ok(ids(await C.inspect(kept, base)).includes('scripts'), 'and still listed');
+  const d = await C.inspect(fx('xfa-dynamic.pdf'), base), x = d.findings.find(f => f.id === 'xfa');
+  assert.ok(x && !C.isRemoved(x, ALL) && /blank/.test(x.note) && /forms\.example\.com/.test(x.value));
+  assert.equal(d.options.scripts, false, 'no checkbox that would do nothing');
+  const dyn = (await C.clean(fx('xfa-dynamic.pdf'), ALL)).bytes;
+  assert.ok((await af(dyn)).has(N('XFA')), 'kept, so the form still shows');
+  assert.deepEqual(ids(await C.inspect(dyn, base)), ['xfa']);
+});
+
+test('PDF: buttons that send the form to a server or load data are listed under Scripts and removed', async () => {
+  const r = await C.inspect(fx('submit.pdf'), base), s = r.findings.find(f => f.id === 'scripts');
+  assert.equal(s.value, 'a button that sends the form to collect.example.net; a button that loads data from another file');
+  assert.equal(s.risk, 'high');
+  const out = (await C.clean(fx('submit.pdf'), ALL)).bytes;
+  const after = await pdfStrings(out);
+  assert.ok(!after.includes('collect.example') && !after.includes('answers.fdf'));
+  assert.deepEqual(ids(await C.inspect(out, base)), ['forms'], 'the buttons themselves stay');
+  const keep = (await C.clean(fx('submit.pdf'), base)).bytes;
+  assert.ok((await pdfStrings(keep)).includes('collect.example'), 'kept when “Remove scripts” is unticked');
+});
+
+test('PDF: article threads lose their own author and title; web capture data is removed', async () => {
+  const r = await C.inspect(fx('threads.pdf'), base);
+  assert.equal(r.findings.find(f => f.id === 'threads').value, 'Thread Author; Draft column');
+  assert.ok(ids(r).includes('webcapture'));
+  const out = (await C.clean(fx('threads.pdf'), base)).bytes;
+  const before = await pdfStrings(fx('threads.pdf')), after = await pdfStrings(out);
+  for (const s of ['Thread Author', 'Draft column', 'intranet.example']) { assert.ok(before.includes(s)); assert.ok(!after.includes(s), 'still contains ' + s); }
+  assert.deepEqual(ids(await C.inspect(out, base)), []);
+  const cat = (await loadOut(out)).catalog;
+  assert.equal(cat.lookup(N('Threads')).size(), 1, 'the thread itself stays');
+  assert.ok(!cat.has(N('SpiderInfo')));
+});
+
+test('images: reserved JPEG markers, extra Adobe bytes, unknown critical PNG chunks and sPLT are removed', async () => {
+  for (const [file, want] of [['hidden.jpg', /Adobe colour block.*reserved JPEG markers/], ['hidden.png', /suggested palette.*\(SECr\)/]]) {
+    const r = await C.inspect(fx(file), base);
+    assert.match(r.findings.find(f => f.id === 'appdata').value, want);
+    const out = (await C.clean(fx(file), base)).bytes;
+    assert.ok(!has(out, 'SECRET'), file + ' still contains the text');
+    assert.deepEqual(ids(await C.inspect(out, base)), []);
+  }
+  const jpg = (await C.clean(fx('hidden.jpg'), base)).bytes, segs = C._internal.jpegSegments(jpg).segs;
+  const adobe = segs.find(s => s.m === 0xee);
+  assert.equal(adobe.e - adobe.d, 12, 'the Adobe block keeps its 12 standard bytes (colour transform)');
+  assert.ok(!segs.some(s => s.m >= 0xf0 && s.m <= 0xfd));
+  const from = b => { const s = C._internal.jpegSegments(b).segs.find(x => x.m === 0xdb); return Buffer.from(b.subarray(s.s)); };
+  assert.ok(from(fx('hidden.jpg')).equals(from(jpg)), 'picture data unchanged');
+  const png = (await C.clean(fx('hidden.png'), base)).bytes;
+  assert.deepEqual(C._internal.pngChunks(png).chunks.map(c => c.type), ['IHDR', 'IDAT', 'IEND']);
+});
+
+test('compressed data that unpacks to too much is treated as damaged, without freezing', async () => {
+  const bomb = zlib.deflateSync(Buffer.alloc(80 * 1024 * 1024));   // 80 MB of zeros in about 80 KB
+  // PNG: a colour profile and a text chunk
+  const png = fx('image.png'), chunk = (t, d) => { const c = Buffer.alloc(12 + d.length); c.writeUInt32BE(d.length); c.write(t, 4, 'latin1'); d.copy(c, 8); c.writeUInt32BE(C._internal.crc32(Buffer.concat([Buffer.from(t, 'latin1'), d])), 8 + d.length); return c; };
+  const big = new Uint8Array(Buffer.concat([Buffer.from(png.subarray(0, 33)), chunk('iCCP', Buffer.concat([Buffer.from('x\0\0'), bomb])), chunk('zTXt', Buffer.concat([Buffer.from('Comment\0\0'), bomb])), Buffer.from(png.subarray(33))]));
+  let t = Date.now(); const r = await C.inspect(big, base);
+  assert.equal(r.findings.find(f => f.id === 'icc').value, 'damaged');
+  assert.match(r.findings.find(f => f.id === 'comment').value, /\(compressed\)/);
+  const out = (await C.clean(big, base)).bytes;
+  assert.ok(!has(out, 'iCCP') && !has(out, 'zTXt'));
+  // PDF: document XMP that unpacks to 80 MB
+  const doc = await PDFLib.PDFDocument.create(); doc.addPage();
+  doc.catalog.set(N('Metadata'), doc.context.register(PDFLib.PDFRawStream.of(doc.context.obj({ Type: 'Metadata', Subtype: 'XML', Filter: 'FlateDecode' }), new Uint8Array(bomb))));
+  const pdf = await doc.save();
+  const p = await C.inspect(pdf, base);
+  assert.ok(!p.error && Array.isArray(p.findings));
+  assert.equal(ids(await C.inspect((await C.clean(pdf, base)).bytes, base)).length, 0);
+  assert.ok(Date.now() - t < 20000, 'finished in reasonable time');
 });
 
 test('file names that give things away', () => {
@@ -217,7 +339,7 @@ test('zip: stored files, fixed dates, duplicate names renamed', () => {
 });
 
 test('damaged and hostile files never crash inspection', async () => {
-  const files = ['photo-full.jpg', 'motion.jpg', 'image.png', 'image.webp', 'doc.pdf', 'icc.jpg', 'p3.jpg', 'p3.png', 'p3.webp'];
+  const files = ['photo-full.jpg', 'motion.jpg', 'image.png', 'image.webp', 'doc.pdf', 'icc.jpg', 'p3.jpg', 'p3.png', 'p3.webp', 'signed.pdf', 'xfa.pdf', 'submit.pdf', 'hidden.jpg', 'hidden.png'];
   let seed = 7; const rnd = n => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) % n;
   for (const f of files) {
     const src = fx(f);

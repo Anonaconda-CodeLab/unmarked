@@ -44,7 +44,15 @@ public class UnmarkedPlugin extends Plugin {
 
     @Override
     public void load() {
+        deleteTree(shareDir());   // clean copies handed to the share sheet last time don't linger
         if (getActivity() != null) takeIntent(getActivity().getIntent());
+    }
+
+    /* Only files offered by other apps are taken: content:// addresses that aren't Unmarked's own share folder. A file://
+       address, or one of Unmarked's own files, could otherwise be "shared" back in by another app. */
+    private boolean acceptable(Uri u) {
+        return u != null && ContentResolver.SCHEME_CONTENT.equals(u.getScheme())
+            && !(getContext().getPackageName() + ".fileprovider").equals(u.getAuthority());
     }
 
     @Override
@@ -62,15 +70,15 @@ public class UnmarkedPlugin extends Plugin {
         try {
             if (Intent.ACTION_SEND.equals(action)) {
                 Uri u = intent.getParcelableExtra(Intent.EXTRA_STREAM);
-                if (u != null) got.add(u);
+                if (acceptable(u)) got.add(u);
             } else {
                 ArrayList<Uri> list = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
-                if (list != null) for (Uri u : list) if (u != null) got.add(u);
+                if (list != null) for (Uri u : list) if (acceptable(u)) got.add(u);
             }
         } catch (Exception ignored) { }
         ClipData clip = intent.getClipData();
         if (got.isEmpty() && clip != null) {
-            for (int i = 0; i < clip.getItemCount(); i++) { Uri u = clip.getItemAt(i).getUri(); if (u != null) got.add(u); }
+            for (int i = 0; i < clip.getItemCount(); i++) { Uri u = clip.getItemAt(i).getUri(); if (acceptable(u)) got.add(u); }
         }
         intent.setAction(Intent.ACTION_MAIN);   // handled: don't take the same files again if the screen is rebuilt
         synchronized (shared) { shared.addAll(got); }

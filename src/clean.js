@@ -47,12 +47,20 @@
   const text = b => { const s = utf8(b, true); return s != null ? s : latin1(b); };
   const clip = (s, n = 120) => { s = String(s).replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
   const kb = n => n < 1024 ? n + ' bytes' : n < 1048576 ? (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
-  async function inflate(bytes, raw) {
+  // compressed data is unpacked up to a limit: a few kilobytes can unpack to gigabytes and freeze the page
+  const UNPACK_LIMIT = 64 * 1024 * 1024;
+  async function inflate(bytes, raw) {   // null when damaged or too big
     if (typeof DecompressionStream === 'undefined') return null;
     try {
-      const ds = new DecompressionStream(raw ? 'deflate-raw' : 'deflate');
-      const out = new Response(new Blob([bytes]).stream().pipeThrough(ds));
-      return new Uint8Array(await out.arrayBuffer());
+      const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream(raw ? 'deflate-raw' : 'deflate')).getReader();
+      const parts = []; let n = 0;
+      for (;;) {
+        const { done, value } = await reader.read(); if (done) break;
+        n += value.length;
+        if (n > UNPACK_LIMIT) { reader.cancel().catch(() => {}); return null; }
+        parts.push(value);
+      }
+      return concat(parts);
     } catch (e) { return null; }
   }
   async function deflate(bytes) {
@@ -428,11 +436,15 @@
     if (m === 0xe2) return startsWith(b, d, 'ICC_PROFILE\0') ? 'icc' : startsWith(b, d, 'MPF\0') ? 'mpf' : startsWith(b, d, 'FPXR\0') ? 'fpxr' : 'app2';
     if (m === 0xed) return startsWith(b, d, 'Photoshop 3.0\0') ? 'photoshop' : 'app13';
     if (m === 0xee) return startsWith(b, d, 'Adobe') ? 'adobe' : 'app14';
+    if (m >= 0xf0 && m <= 0xfd) return 'jpgn';   // reserved markers: no picture data in an ordinary JPEG (JPEG-LS is handled below)
     if (m === 0xeb) return 'jumbf';
     if (m === 0xfe) return 'com';
     if (m >= 0xe0 && m <= 0xef) return 'app' + (m - 0xe0);
     return null;
   }
+  // JPEG-LS uses two of the reserved markers (FFF7 frame, FFF8 parameters) for the picture itself
+  const isJpegLs = segs => segs.some(s => s.m === 0xf7);
+  const ADOBE_LEN = 12;   // 'Adobe', version, two flag words and the colour transform: anything after it is extra
   // a JPEG colour profile may be split over several APP2 segments, numbered 1..count
   function jpegIcc(b, segs) {
     const parts = segs.filter(s => appId(b, s) === 'icc');
@@ -458,7 +470,9 @@
       else if (id === 'mpf') addOnce(out, F('mpf', 'Extra embedded images', 'previews, depth maps or other hidden pictures', 'medium'));
       else if (id === 'jumbf') addOnce(out, F('c2pa', 'Content Credentials', 'a signed record of where the image came from and how it was edited', 'medium'));
       else if (id === 'com') addOnce(out, F('comment', 'Comment', text(b.subarray(s.d, s.e)), 'medium'));
-      else if (id === 'jfif' || id === 'adobe') continue;
+      else if (id === 'adobe') { if (s.e - s.d > ADOBE_LEN) addOnce(out, F('appdata', 'Other app data', 'extra data added to the Adobe colour block', 'low')); }
+      else if (id === 'jpgn') { if (!(isJpegLs(segs) && (s.m === 0xf7 || s.m === 0xf8))) addOnce(out, F('appdata', 'Other app data', 'data in reserved JPEG markers', 'low')); }
+      else if (id === 'jfif') continue;
       else if (id === 'jfxx') addOnce(out, F('thumb', 'Embedded thumbnail', 'a small copy of the original picture', 'high', { note: 'It can still show parts of the photo you cropped out or edited.' }));
       else addOnce(out, F('appdata', 'Other app data', 'private data added by a camera or app', 'low'));
     }
@@ -483,7 +497,9 @@
       if (id === 'jfif') { parts.push(b.subarray(s.s, s.e)); continue; }
       if (!inserted && id !== 'jfif') addExif();
       if (id === 'icc') { if (icc.plan.kind === 'other' && s === icc.parts[0]) parts.push(...jpegIccSegments(b, icc)); }
-      else if (id === null || id === 'adobe') parts.push(b.subarray(s.s, s.e));
+      else if (id === 'adobe') parts.push(s.e - s.d > ADOBE_LEN ? concat([new Uint8Array([0xff, 0xee, 0, ADOBE_LEN + 2]), b.subarray(s.d, s.d + ADOBE_LEN)]) : b.subarray(s.s, s.e));
+      else if (id === 'jpgn') { if (isJpegLs(segs) && (s.m === 0xf7 || s.m === 0xf8)) parts.push(b.subarray(s.s, s.e)); }
+      else if (id === null) parts.push(b.subarray(s.s, s.e));
     }
     addExif();
     parts.push(end > 0 ? b.subarray(end - 2, end) : new Uint8Array([0xff, 0xd9]));
@@ -492,7 +508,8 @@
 
   // ---------- PNG ----------
   const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-  const PNG_KEEP = new Set(['tRNS', 'gAMA', 'cHRM', 'sRGB', 'iCCP', 'sBIT', 'bKGD', 'pHYs', 'hIST', 'sPLT', 'acTL', 'fcTL', 'fdAT', 'cICP', 'mDCv', 'cLLI', 'mDCV', 'cLLi']);
+  const PNG_KEEP = new Set(['tRNS', 'gAMA', 'cHRM', 'sRGB', 'iCCP', 'sBIT', 'bKGD', 'pHYs', 'hIST', 'acTL', 'fcTL', 'fdAT', 'cICP', 'mDCv', 'cLLI', 'mDCV', 'cLLi']);
+  const PNG_CRITICAL = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND']);   // any other chunk with a capital first letter is unknown: viewers refuse it
   function pngChunks(b) {
     for (let i = 0; i < 8; i++) if (b[i] !== PNG_SIG[i]) throw new Error('Not a PNG file');
     const out = []; let p = 8;
@@ -566,7 +583,8 @@
       else if (c.type === 'tIME') { const d = b.subarray(c.d); addOnce(out, F('timemod', 'Date modified', `${be16(d, 0)}-${String(d[2]).padStart(2, '0')}-${String(d[3]).padStart(2, '0')} ${String(d[4]).padStart(2, '0')}:${String(d[5]).padStart(2, '0')}`, 'medium')); }
       else if (c.type === 'iCCP') { const icc = await pngIcc(b, c); if (icc) iccFindings(icc.plan, out); else addOnce(out, F('icc', 'Colour profile', '', 'low', { keep: 'always', note: 'Kept so colours look right.' })); }
       else if (c.type === 'caBX') addOnce(out, F('c2pa', 'Content Credentials', 'a signed record of where the image came from and how it was edited', 'medium'));
-      else if (/^[a-z]/.test(c.type) && !PNG_KEEP.has(c.type) && !/^(tEXt|zTXt|iTXt)$/.test(c.type)) addOnce(out, F('appdata', 'Other app data', 'private data added by an app (' + clip(c.type, 8) + ')', 'low'));
+      else if (c.type === 'sPLT') addOnce(out, F('appdata', 'Other app data', 'a suggested palette, which carries a name', 'low'));
+      else if (!PNG_CRITICAL.has(c.type) && !PNG_KEEP.has(c.type) && !/^(tEXt|zTXt|iTXt)$/.test(c.type)) addOnce(out, F('appdata', 'Other app data', 'private data added by an app (' + clip(c.type.replace(/[^\x20-\x7e]/g, '?'), 8) + ')', 'low'));
     }
     if (trailing > 16) addOnce(out, F('trailing', 'Hidden data after the picture', kb(trailing) + ' of extra data stored after the image', 'high'));
     return { findings: out, keep };
@@ -589,7 +607,7 @@
     if (opts.keepDate && keep.pngDate && !(exif && keep.date)) extra.push(pngChunk('tEXt', concat([enc('Creation Time\0'), enc(keep.pngDate.slice(0, 64))])));
     const parts = [b.subarray(0, 8)], hasSrgb = chunks.some(c => c.type === 'sRGB' || c.type === 'cICP');
     for (const c of chunks) {
-      const critical = /^[A-Z]/.test(c.type);
+      const critical = PNG_CRITICAL.has(c.type);
       if (c.type === 'iCCP') {
         const icc = await pngIcc(b, c), plan = icc && icc.plan;
         if (!plan || (plan.kind === 'other' && !plan.changed)) parts.push(b.subarray(c.s, c.e));
@@ -694,6 +712,31 @@
     return out;
   }
   const MARKUP_KEEP = new Set(['/Link', '/Widget']);
+  // a stream's decoded bytes, or null when it is damaged or would unpack past the limit
+  function pdfDecode(o, lib) {
+    try {
+      if (!(o instanceof lib.PDFRawStream)) return o.getContents();
+      const out = lib.decodePDFRawStream(o).getBytes(UNPACK_LIMIT + 1);
+      return out.length > UNPACK_LIMIT ? null : out;
+    } catch (e) { return null; }
+  }
+  const hostOf = s => { const m = /^[a-z][\w+.-]*:\/\/(?:[^@/?#]*@)?([^/?#:]+)/i.exec(s || ''); return clip(m ? m[1] : s || 'another file', 60); };
+  // digital signatures: the field's value, and signature dictionaries anywhere (/Type /Sig or /DocTimeStamp)
+  const isSigDict = (o, K) => K.isDict(o) && (o.lookup(K.N('Type')) === K.N('Sig') || o.lookup(K.N('Type')) === K.N('DocTimeStamp'));
+  const isSigField = (o, K) => K.isDict(o) && o.lookup(K.N('FT')) === K.N('Sig');
+  // actions that run code or send the form somewhere
+  const SCRIPT_ACTIONS = ['JavaScript', 'Launch', 'SubmitForm', 'ImportData'];
+  // XFA: an XML form layer (mostly in government and tax forms) that Adobe Reader runs, scripts included
+  function xfaInfo(doc, K, lib) {
+    const af = doc.catalog.lookup(K.N('AcroForm'));
+    if (!K.isDict(af) || !af.has(K.N('XFA'))) return null;
+    const x = af.lookup(K.N('XFA')), ctx = doc.context;
+    const streams = K.isArr(x) ? x.asArray().map(v => ctx.lookup(v)).filter(K.isStream) : K.isStream(x) ? [x] : [];
+    const xml = streams.map(s => { const r = pdfDecode(s, lib); return r ? latin1(r) : '<script>'; }).join('\n');   // unreadable: assume the worst
+    const fields = af.lookup(K.N('Fields')), needs = doc.catalog.lookup(K.N('NeedsRendering'));
+    const submits = [...xml.matchAll(/<submit\b[^>]*\btarget\s*=\s*["']([^"']+)/gi)].map(m => hostOf(m[1]));
+    return { af, scripts: /<script\b/i.test(xml), submits, dynamic: !(K.isArr(fields) && fields.size()) || String(needs) === 'true' };
+  }
   // a photo placed in the PDF: the JPEG data, after undoing any text encoding (ASCII85, hex, Flate) wrapped around it
   function pdfJpeg(o, K, lib) {
     if (!(o instanceof lib.PDFRawStream) || o.dict.lookup(K.N('Subtype')) !== K.N('Image')) return null;
@@ -705,7 +748,9 @@
     d.set(K.N('Filter'), o.dict.context.obj(list.slice(0, -1)));
     const p = o.dict.lookup(K.N('DecodeParms'));
     if (K.isArr(p)) d.set(K.N('DecodeParms'), o.dict.context.obj(p.asArray().slice(0, -1))); else d.delete(K.N('DecodeParms'));
-    return lib.decodePDFRawStream(lib.PDFRawStream.of(d, o.getContents())).decode();
+    const out = pdfDecode(lib.PDFRawStream.of(d, o.getContents()), lib);
+    if (!out) throw new Error('too big or damaged');
+    return out;
   }
   async function inspectPdf(b, lib) {
     const out = [], options = { attachments: false, scripts: false, comments: false };
@@ -722,18 +767,46 @@
     if (ctx.trailerInfo.ID) out.push(F('docid', 'Document IDs', 'identifiers that can link this file to its originals and other copies', 'medium'));
     const cat = doc.catalog;
     let xmpCount = 0, thumbs = 0, piece = 0, js = 0, annCount = 0, authors = new Set(), photos = 0, photoGps = 0, fields = 0, layers = 0;
+    const sigs = new Set(), submits = new Set(); let imports = 0;
     const seen = walk(doc, lib, (o, parent, key) => {
       if (key === '/Metadata' && K.isStream(o)) xmpCount++;
       if (key === '/Thumb') thumbs++;
       if (key === '/PieceInfo') piece++;
       if ((key === '/S' && o === K.N('JavaScript')) || key === '/JS') js++;
+      if (isSigDict(o, K)) sigs.add(o);
+      if (isSigField(o, K)) { const v = o.lookup(K.N('V')); if (K.isDict(v)) sigs.add(v); }
+      if (K.isDict(o)) {
+        const s = o.lookup(K.N('S'));
+        if (s === K.N('SubmitForm')) { const t = o.lookup(K.N('F')); submits.add(hostOf(K.isDict(t) ? K.str(t.lookup(K.N('UF')) || t.lookup(K.N('F'))) : K.str(t))); }
+        if (s === K.N('ImportData')) imports++;
+      }
       return true;
     });
+    // digital signatures
+    if (sigs.size || cat.has(K.N('DSS'))) {
+      const who = [...sigs].map(d => [K.str(d.lookup(K.N('Name'))), d.has(K.N('M')) ? pdfDate(K.str(d.lookup(K.N('M')))) : '', K.str(d.lookup(K.N('Location'))), K.str(d.lookup(K.N('ContactInfo'))), K.str(d.lookup(K.N('Reason')))].filter(Boolean).join(', ')).filter(Boolean);
+      out.push(F('signature', sigs.size > 1 ? 'Digital signatures' : 'Digital signature', who.join('; ') || (sigs.size ? 'the signer’s certificate, with their name' : 'certificates kept to check a signature'), 'high',
+        { note: 'The digital signature is removed: any change to a signed PDF makes its signature invalid anyway.' }));
+    }
+    // XFA forms
+    const xfa = xfaInfo(doc, K, lib);
+    if (xfa && (xfa.scripts || xfa.submits.length)) {
+      if (xfa.dynamic) out.push(F('xfa', 'XFA form scripts', `code in a form built entirely with XFA${xfa.submits.length ? `, which can send the form to ${[...new Set(xfa.submits)].join(', ')}` : ''}`, 'medium',
+        { keep: 'always', note: 'Kept: this form is built entirely from XFA, so without it the pages would be blank. Only Adobe Reader runs it; most other PDF readers ignore it.' }));
+      else { if (xfa.scripts) js++; xfa.submits.forEach(h => submits.add(h)); }
+    }
+    // article threads and web capture keep their own details
+    const threads = cat.lookup(K.N('Threads')), tinfo = [];
+    if (K.isArr(threads)) for (let i = 0; i < threads.size(); i++) {
+      const t = threads.lookup(i), inf = K.isDict(t) ? t.lookup(K.N('I')) : null;
+      if (K.isDict(inf)) for (const [, v] of inf.entries()) { const x = K.str(ctx.lookup(v)); if (x) tinfo.push(x); }
+    }
+    if (tinfo.length) out.push(F('threads', 'Article thread details', [...new Set(tinfo)].join('; '), 'medium', { note: 'Article threads (for reading columns in order) can carry their own author and title.' }));
     // XMP of the document itself (details), other XMP blocks are only counted
     const meta = cat.lookup(K.N('Metadata'));
     if (K.isStream(meta)) {
       let raw = null;
-      try { raw = lib.decodePDFRawStream ? lib.decodePDFRawStream(meta).decode() : meta.getContents(); } catch (e) { raw = null; }
+      raw = pdfDecode(meta, lib);
       out.push(...xmpFindings(raw ? text(raw) : '').filter(f => !out.some(x => x.id === f.id && x.value === f.value)));
       xmpCount--;
     }
@@ -760,7 +833,12 @@
     if (files.length || fileAnnots) { options.attachments = true; out.push(F('attachments', 'Attached files', files.length ? files.map(n => clip(n, 40)).join(', ') : `${fileAnnots} attached file${fileAnnots > 1 ? 's' : ''}`, 'high', { option: 'attachments', note: 'Files stored inside the PDF. They can hold their own hidden data.' })); }
     if (annCount) { options.comments = true; out.push(F('comments', 'Comments and markup', `${annCount} note${annCount > 1 ? 's' : ''}, highlight${annCount > 1 ? 's' : ''} or drawing${annCount > 1 ? 's' : ''}`, 'medium', { option: 'comments' })); }
     if (authors.size) out.push(F('commentauthors', 'Comment authors', [...authors].join(', '), 'high', { option: 'comments' }));
-    if (js || (K.isDict(names) && names.has(K.N('JavaScript')))) { options.scripts = true; out.push(F('scripts', 'Scripts', 'JavaScript that runs when the PDF is opened or used', 'medium', { option: 'scripts' })); }
+    if (cat.has(K.N('SpiderInfo')) || (K.isDict(names) && (names.has(K.N('URLS')) || names.has(K.N('IDS'))))) out.push(F('webcapture', 'Web capture data', 'the addresses of the web pages this PDF was made from', 'medium'));
+    const doesWhat = [];
+    if (js || (K.isDict(names) && names.has(K.N('JavaScript')))) doesWhat.push('JavaScript that runs when the PDF is opened or used');
+    if (submits.size) doesWhat.push(`a button that sends the form to ${[...submits].join(', ')}`);
+    if (imports) doesWhat.push('a button that loads data from another file');
+    if (doesWhat.length) { options.scripts = true; out.push(F('scripts', 'Scripts', doesWhat.join('; '), submits.size ? 'high' : 'medium', { option: 'scripts' })); }
     const af = cat.lookup(K.N('AcroForm')); if (K.isDict(af)) { const fl = af.lookup(K.N('Fields')); if (K.isArr(fl)) fields = Math.max(fields, fl.size()); }
     if (fields) out.push(F('forms', 'Form fields', `${fields} field${fields > 1 ? 's' : ''} and any answers in them (kept)`, 'low', { keep: 'always' }));
     const ocp = cat.lookup(K.N('OCProperties')); if (K.isDict(ocp)) { const ocg = ocp.lookup(K.N('OCGs')); layers = K.isArr(ocg) ? ocg.size() : 0; }
@@ -804,14 +882,35 @@
       if (opts.removeScripts) names.delete(K.N('JavaScript'));
     }
     if (opts.removeAttachments) cat.delete(K.N('AF'));
-    const isScriptAction = a => { const d = ctx.lookup(a); return K.isDict(d) && (d.lookup(K.N('S')) === K.N('JavaScript') || d.lookup(K.N('S')) === K.N('Launch') || d.has(K.N('JS'))); };
-    walk(doc, lib, o => {
+    // digital signatures: the change made by cleaning would make them invalid anyway
+    cat.delete(K.N('DSS')); cat.delete(K.N('Perms'));
+    const af = cat.lookup(K.N('AcroForm'));
+    if (K.isDict(af)) af.delete(K.N('SigFlags'));
+    // XFA scripts: without XFA, Adobe Reader uses the ordinary form fields (an XFA-only form is kept, and listed)
+    const xfa = xfaInfo(doc, K, lib);
+    if (opts.removeScripts && xfa && !xfa.dynamic && (xfa.scripts || xfa.submits.length)) { xfa.af.delete(K.N('XFA')); cat.delete(K.N('NeedsRendering')); }
+    // article threads' own details, and web capture data
+    const threads = cat.lookup(K.N('Threads'));
+    if (K.isArr(threads)) for (let i = 0; i < threads.size(); i++) { const t = threads.lookup(i); if (K.isDict(t)) t.delete(K.N('I')); }
+    cat.delete(K.N('SpiderInfo'));
+    if (K.isDict(names)) { names.delete(K.N('URLS')); names.delete(K.N('IDS')); }
+    const isScriptAction = a => { const d = ctx.lookup(a); return K.isDict(d) && (SCRIPT_ACTIONS.some(n => d.lookup(K.N('S')) === K.N(n)) || d.has(K.N('JS'))); };
+    walk(doc, lib, (o, parent, key) => {
+      if (isSigDict(o, K) && K.isDict(parent) && key) { parent.delete(K.N(key.slice(1))); return false; }
       if (!K.isDict(o)) return true;
       for (const k of ALWAYS) if (o.has(K.N(k))) o.delete(K.N(k));
+      if (isSigField(o, K)) {   // an empty signature field stays; its value and its picture (often the signer's name) go
+        o.delete(K.N('V')); o.delete(K.N('AP'));
+        const kids = o.lookup(K.N('Kids')); if (K.isArr(kids)) for (let i = 0; i < kids.size(); i++) { const w = kids.lookup(i); if (K.isDict(w)) w.delete(K.N('AP')); }
+      }
       if (opts.removeScripts) {
         o.delete(K.N('AA'));
         for (const k of ['OpenAction', 'A']) { const v = o.get(K.N(k)); if (v && isScriptAction(v)) o.delete(K.N(k)); }
-        if (o.has(K.N('Next'))) { const v = o.get(K.N('Next')); if (isScriptAction(v)) o.delete(K.N('Next')); }
+        if (o.has(K.N('Next'))) {
+          const v = o.get(K.N('Next')), list = ctx.lookup(v);
+          if (K.isArr(list)) { const keep = list.asArray().filter(a => !isScriptAction(a)); if (keep.length) o.set(K.N('Next'), ctx.obj(keep)); else o.delete(K.N('Next')); }
+          else if (isScriptAction(v)) o.delete(K.N('Next'));
+        }
       }
       if (opts.removeAttachments && o.lookup(K.N('Type')) === K.N('Filespec')) { o.delete(K.N('EF')); o.delete(K.N('RF')); }
       return true;

@@ -119,7 +119,7 @@
   const PDF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 16.5h6" stroke-linecap="round"/></svg>';
   const FILE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/></svg>';
   const OPT_LABEL = { attachments: 'Remove attached files', scripts: 'Remove scripts', comments: 'Remove comments and markup' };
-  const OPT_NOTE = { attachments: 'Files stored inside the PDF.', scripts: 'Code that runs when the PDF is opened. Rarely needed.', comments: 'Notes, highlights and drawings, and who made them. Links and form fields stay.' };
+  const OPT_NOTE = { attachments: 'Files stored inside the PDF.', scripts: 'Code that runs when the PDF is opened, and buttons that send the form to a website. Rarely needed.', comments: 'Notes, highlights and drawings, and who made them. Links and form fields stay.' };
 
   function render(f) {
     if (!f.li) {
@@ -145,7 +145,7 @@
     else if (f.error) st.innerHTML = `<span class="chip"><i></i>Can't clean this file</span><p>${esc(f.error)}</p>`;
     else if (f.cleanError) st.innerHTML = `<span class="chip high"><i></i>Not cleaned</span><p>${esc(f.cleanError)}</p>`;
     else if (f.out) {
-      const left = f.out.leftover, kept = f.out.kept.filter(x => x.keep !== 'always' || /orientation|icc/.test(x.id));
+      const left = f.out.leftover, kept = f.out.kept.filter(x => x.keep !== 'always' || /^(orientation|icc|xfa)$/.test(x.id));
       st.innerHTML = `<span class="chip ok"><i></i>Cleaned</span>`
         + `<p>${f.out.removedCount ? `${f.out.removedCount} removed, ${f.out.keptCount} kept. ` : 'Nothing needed removing. '}${size(f.size)} → ${size(f.out.bytes.length)}.</p>`
         + (left.length ? `<p class="warn">Still inside: ${esc(left.map(x => x.label).join(', '))}. Please report this file type to us.</p>` : '<p>Checked again: nothing else found.</p>')

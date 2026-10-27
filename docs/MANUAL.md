@@ -89,11 +89,16 @@ Removed:
   Unmarked writes a fresh copy containing only the current version.
 - **Camera data inside photos** placed in the document
 - **Page thumbnails** and private editing data left by apps such as Word or Illustrator
+- **Digital signatures**: the signer's name, email, place, reason, signing time and certificate. Any change to a
+  signed PDF makes its signature invalid anyway, so the signature is removed; the empty signature box stays.
+- **Article threads' own details** (author and title) and **web capture data** (the addresses of the web pages a
+  PDF was made from)
 
 You choose, for each PDF that has them (all are ticked to start with):
 
 - **Attached files**: files stored inside the PDF. They can carry their own hidden data.
-- **Scripts**: code that runs when the PDF is opened. Rarely needed.
+- **Scripts**: code that runs when the PDF is opened (including scripts in XFA forms), and buttons that send the
+  form to a website or load data from another file. Rarely needed.
 - **Comments and markup**: notes, highlights and drawings, and the names of the people who made them.
 
 Kept: the text, pictures and layout, links, form fields and their answers, and layers.
@@ -107,6 +112,8 @@ Kept: the text, pictures and layout, links, form fields and their answers, and l
 - **Text that is in the document**, including tracked changes that were already accepted.
 - **Your device's own records**: the original file, your gallery, and cloud backups keep their data.
 - **Hidden layers in PDFs** are kept. If a PDF has layers, Unmarked says so; check them in a PDF reader.
+- **Forms built entirely with XFA** (some government and tax forms) keep their scripts, because without them the
+  pages would be blank. Unmarked lists them. Only Adobe Reader runs them; most other PDF readers ignore them.
 
 ## Files Unmarked can't clean (yet)
 
