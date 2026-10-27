@@ -1,6 +1,6 @@
 {
   "name": "unmarked-android",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Android build of Unmarked (Capacitor wrapper around ../dist)",
   "license": "GPL-3.0-or-later",

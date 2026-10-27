@@ -1,10 +1,16 @@
 name: Android APK
-# Builds the Android app (mobile/) from the same web app in dist/ and signs it with the release key kept in the
-# repository secrets. Pushes to main publish the "android-test" pre-release; a version tag (v0.1.0) publishes the
-# official release, with its SHA-256 checksum and the signing certificate's fingerprint in the release notes.
+# Builds the Android app (mobile/) from the same web app in dist/, signs it with the studio's release key, and publishes
+# it. Pushes to main publish the "android-test" pre-release. Official releases are made by running this workflow by
+# hand on main with "release" ticked; it creates the tag v<version from package.json> itself. (Pushing a tag does
+# nothing: a tag can point at any commit, so it is not a trigger.)
+#
+# Three jobs, so the signing key and write access are each used in one place only:
+#   build   - read-only; makes an UNSIGNED APK. npm and Gradle (and every package they run) never see the key,
+#             its password or a token that can write to the repository.
+#   sign    - read-only; signs that APK with apksigner, then checks it (no internet permission, the published key).
+#   publish - the only job that can write: creates the release or the pre-release.
 on:
   push:
-    tags: ['v*']
     branches: [main]
     paths: ['src/**', 'dist/**', 'docs/MANUAL.md', 'build.mjs', 'mobile/**', '.github/workflows/android.yml']
   workflow_dispatch:
@@ -14,15 +20,21 @@ on:
         type: boolean
         default: false
 permissions:
-  contents: write
-concurrency:
-  group: android-apk-${{ github.ref }}
-  cancel-in-progress: true
+  contents: read
+concurrency:   # a newer build replaces an older one; a release run is never cancelled, nor cancels anything
+  group: android-apk-${{ github.ref }}-${{ inputs.release && 'release' || 'build' }}
+  cancel-in-progress: ${{ !inputs.release }}
 jobs:
-  apk:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false   # no token left in .git/config for later steps to find
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -30,6 +42,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      - name: Version
+        id: ver
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
       - name: Build the web app
         env:
           LEADONE_BUILD_ID: ${{ github.sha }}   # shown as "build abc1234" in the app's About
@@ -37,53 +52,97 @@ jobs:
       - name: Copy it into the Android project
         working-directory: mobile
         run: npm ci && npx cap sync android
-      - name: Signing key
-        env:
-          # the studio's shared signing key, used by every studio app
-          KS: ${{ secrets.LEADONE_KEYSTORE_B64 }}
-        run: |
-          if [ -n "$KS" ]; then echo "$KS" | base64 -d > "$RUNNER_TEMP/studio.jks"; echo "LEADONE_KEYSTORE=$RUNNER_TEMP/studio.jks" >> "$GITHUB_ENV"; fi
-      - name: Build the APK
+      - name: Build the APK (unsigned)
         working-directory: mobile/android
-        env:
-          LEADONE_KEYSTORE_PASSWORD: ${{ secrets.LEADONE_KEYSTORE_PASSWORD }}
-          LEADONE_KEY_PASSWORD: ${{ secrets.LEADONE_KEYSTORE_PASSWORD }}
-          LEADONE_KEY_ALIAS: leadone
         run: chmod +x gradlew && ./gradlew --no-daemon assembleRelease
-      - name: Require the release key
+      - name: Find it
         run: |
-          if [ ! -f mobile/android/app/build/outputs/apk/release/app-release.apk ]; then
-            echo "::error::The app compiled, but it is unsigned. Add the repository secrets LEADONE_KEYSTORE_B64 and LEADONE_KEYSTORE_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+          APK=mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if [ ! -f "$APK" ]; then echo "::error::No unsigned release APK was built"; ls -R mobile/android/app/build/outputs/apk || true; exit 1; fi
+          cp "$APK" unsigned.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-apk
+          path: unsigned.apk
+          retention-days: 1
+
+  sign:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      cert: ${{ steps.check.outputs.cert }}
+    env:
+      VER: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4   # only for build.mjs (the published fingerprint); nothing from the repository runs here
+        with:
+          persist-credentials: false
+          sparse-checkout: build.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: unsigned-apk
+      - name: Sign with the studio's key
+        env:
+          KS: ${{ secrets.LEADONE_KEYSTORE_B64 }}           # the studio's shared signing key, used by every studio app
+          KS_PASS: ${{ secrets.LEADONE_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KS" ] || [ -z "$KS_PASS" ]; then
+            echo "::error::Add the repository secrets LEADONE_KEYSTORE_B64 and LEADONE_KEYSTORE_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
             exit 1
           fi
-      - name: Check the APK (no internet permission, signed)
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          umask 077; echo "$KS" | base64 -d > "$RUNNER_TEMP/studio.jks"
+          "$BT/zipalign" -c -p 4 unsigned.apk >/dev/null 2>&1 || { "$BT/zipalign" -f -p 4 unsigned.apk aligned.apk && mv aligned.apk unsigned.apk; }
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/studio.jks" --ks-key-alias leadone --ks-pass env:KS_PASS --key-pass env:KS_PASS \
+            --out "Unmarked-$VER.apk" unsigned.apk
+          rm -f "$RUNNER_TEMP/studio.jks"
+      - name: Check the APK (no internet permission, signed with the published key)
+        id: check
         run: |
-          APK=mobile/android/app/build/outputs/apk/release/app-release.apk
-          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
-          "$AAPT" dump permissions "$APK" | tee perms.txt
+          APK="Unmarked-$VER.apk"
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/aapt2" dump permissions "$APK" | tee perms.txt
           if grep -q "android.permission.INTERNET" perms.txt; then echo "::error::INTERNET permission found"; exit 1; fi
-          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          CERT=$("$APKSIGNER" verify --print-certs "$APK" | grep -i "certificate SHA-256 digest" | head -1 | sed 's/.*: //' | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')
+          "$BT/apksigner" verify --min-sdk-version 24 "$APK"
+          CERT=$("$BT/apksigner" verify --print-certs "$APK" | grep -i "certificate SHA-256 digest" | head -1 | sed 's/.*: //' | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')
           echo "Signing certificate SHA-256: $CERT"
-          # the APK must be signed with the published key (certSha256 in build.mjs), or nothing is published
-          WANT=$(node -e "const m=/certSha256: '([0-9A-F:]+)'/.exec(require('fs').readFileSync('build.mjs','utf8')); console.log(m ? m[1] : '')")
-          if [ "$CERT" != "$WANT" ]; then echo "::error::Signed with $CERT, but the published fingerprint is $WANT"; exit 1; fi
-          echo "CERT=$CERT" >> "$GITHUB_ENV"
-          VER=$(node -p "require('./package.json').version")
-          cp "$APK" "Unmarked-$VER.apk"
-          echo "VER=$VER" >> "$GITHUB_ENV"
+          WANT=$(grep -o "certSha256: '[0-9A-F:]*'" build.mjs | sed "s/certSha256: '//; s/'//")
+          if [ -z "$WANT" ] || [ "$CERT" != "$WANT" ]; then echo "::error::Signed with $CERT, but the published fingerprint is $WANT"; exit 1; fi
+          echo "cert=$CERT" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: Unmarked-${{ env.VER }}-apk
           path: Unmarked-${{ env.VER }}.apk
-      - name: Publish the official release (version tag, or run by hand with "release" ticked)
-        if: startsWith(github.ref, 'refs/tags/v') || inputs.release
-        env:
-          GH_TOKEN: ${{ github.token }}
+
+  publish:
+    needs: [build, sign]
+    if: inputs.release || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # the only job that can change the repository (create the tag and release)
+    env:
+      VER: ${{ needs.build.outputs.version }}
+      CERT: ${{ needs.sign.outputs.cert }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4   # only for CHANGELOG.md (the release notes)
+        with:
+          persist-credentials: false
+          sparse-checkout: CHANGELOG.md
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: Unmarked-${{ needs.build.outputs.version }}-apk
+      - name: Publish the official release
+        if: inputs.release
         run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then echo "::error::Official releases are made from main only"; exit 1; fi
           TAG="v$VER"
-          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$TAG" != "$GITHUB_REF_NAME" ]; then echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $VER"; exit 1; fi
-          if [ "$GITHUB_REF_TYPE" != tag ] && gh release view "$TAG" >/dev/null 2>&1; then echo "::error::Release $TAG already exists; raise the version first"; exit 1; fi
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "::error::Release $TAG already exists; raise the version first"; exit 1; fi
           F="Unmarked-$VER.apk"; SUM=$(sha256sum "$F" | cut -d' ' -f1); echo "$SUM  $F" > "$F.sha256"
           { awk -v v="## $VER" '$0==v{f=1;next} /^## /{if(f)exit} f' CHANGELOG.md
             echo; echo "## Download and check"
@@ -91,12 +150,9 @@ jobs:
             echo "- SHA-256 of the APK: \`$SUM\`"
             echo "- Signing certificate SHA-256: \`$CERT\`"
             echo; echo "Built by GitHub Actions from this tag's source code (also attached below). No internet permission."; } > notes.md
-          if [ "$GITHUB_REF_TYPE" = tag ]; then gh release create "$TAG" "$F" "$F.sha256" --verify-tag --latest --title "Unmarked $VER" --notes-file notes.md
-          else gh release create "$TAG" "$F" "$F.sha256" --target "$GITHUB_SHA" --latest --title "Unmarked $VER" --notes-file notes.md; fi
+          gh release create "$TAG" "$F" "$F.sha256" --target "$GITHUB_SHA" --latest --title "Unmarked $VER" --notes-file notes.md
       - name: Publish as the android-test pre-release
-        if: github.ref == 'refs/heads/main' && !inputs.release
-        env:
-          GH_TOKEN: ${{ github.token }}
+        if: ${{ !inputs.release }}
         run: |
           gh release delete android-test --yes --cleanup-tag || true
           gh release create android-test "Unmarked-$VER.apk" --prerelease --target "$GITHUB_SHA" \

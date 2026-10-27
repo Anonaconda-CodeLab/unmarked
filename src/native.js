@@ -8,6 +8,7 @@ const NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform =
 const nativeCall = (plugin, method, opts) => window.Capacitor.nativePromise(plugin, method, opts || {});
 const nativeOn = (plugin, event, cb) => window.Capacitor.addListener(plugin, event, cb);
 const CHUNK = 384 * 1024;   // bytes per bridge call (sent as base64)
+const NATIVE_MAX = 300 * 1024 * 1024;   // same limit as the page (MAX_BYTES in app.js): larger files are never read
 const toB64 = u => { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
 const fromB64 = s => { const b = atob(s || ''), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
 const UnmarkedNative = NATIVE ? {
@@ -27,18 +28,23 @@ const UnmarkedNative = NATIVE ? {
         await nativeCall('Unmarked', 'shareChunk', { index: k, name: f.name, data: toB64(f.bytes.subarray(i, i + CHUNK)), first: i === 0, last: i + CHUNK >= f.bytes.length });
     await nativeCall('Unmarked', 'shareSend', { count: files.length, mimes: files.map(f => f.mime || 'application/octet-stream') });
   },
-  // read files the native side holds (picked or shared) in pieces; each keeps its address so the clean copy can be saved next to it
+  // read files the native side holds (picked or shared) in pieces; each keeps its address so the clean copy can be saved next to it.
+  // A file over the limit is not read (it could run the app out of memory): it is passed on with its size only, and the
+  // page shows "too large". The size Android reports is checked first; reading also stops at the limit, in case it was wrong.
   async readHeld(list) {
     const out = [];
     for (const it of list || []) {
+      const name = it.name || 'file', source = it.uri || '';
+      if (+it.size > NATIVE_MAX) { out.push({ name, bytes: null, size: +it.size, source }); continue; }
       const parts = []; let offset = 0;
       for (;;) {
         const c = await nativeCall('Unmarked', 'readShared', { id: it.id, offset, length: CHUNK });
         const u = fromB64(c && c.data); parts.push(u); offset += u.length;
-        if (!c || c.eof || !u.length) break;
+        if (!c || c.eof || !u.length || offset > NATIVE_MAX) break;
       }
+      if (offset > NATIVE_MAX) { out.push({ name, bytes: null, size: offset, source }); continue; }
       const bytes = new Uint8Array(offset); let o = 0; for (const p of parts) { bytes.set(p, o); o += p.length; }
-      out.push({ name: it.name || 'file', bytes, source: it.uri || '' });
+      out.push({ name, bytes, source });
     }
     await nativeCall('Unmarked', 'clearShared').catch(() => {});
     return out;

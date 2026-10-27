@@ -215,6 +215,7 @@ public class UnmarkedPlugin extends Plugin {
         Uri uri = result.getData() != null ? result.getData().getData() : null;
         boolean ok = result.getResultCode() == Activity.RESULT_OK && uri != null;
         if (ok) prefs().edit().putString("lastSaveUri", uri.toString()).apply();   // remembered on this phone only
+        saveTarget = ok && ContentResolver.SCHEME_CONTENT.equals(uri.getScheme()) ? uri : null;   // the only place writeChunk may write
         r.put("uri", ok ? uri.toString() : "");
         call.resolve(r);
     }
@@ -234,6 +235,9 @@ public class UnmarkedPlugin extends Plugin {
     private SharedPreferences prefs() { return getContext().getSharedPreferences("unmarked", Context.MODE_PRIVATE); }
 
     private OutputStream openFile;   // stays open from the first piece to the last, so every storage provider works
+    /* The place the person just chose in the save screen. writeChunk writes there and nowhere else, once: even code
+       injected into the page (no file content can become code, but just in case) couldn't write over other files. */
+    private Uri saveTarget;
 
     @PluginMethod
     public void writeChunk(PluginCall call) {
@@ -241,8 +245,11 @@ public class UnmarkedPlugin extends Plugin {
         boolean first = Boolean.TRUE.equals(call.getBoolean("first", false)), last = Boolean.TRUE.equals(call.getBoolean("last", false));
         try {
             if (first) {
-                if (openFile != null) { try { openFile.close(); } catch (Exception ignored) { } }
-                openFile = getContext().getContentResolver().openOutputStream(Uri.parse(u), "wt");
+                if (openFile != null) { try { openFile.close(); } catch (Exception ignored) { } openFile = null; }
+                Uri target = saveTarget;
+                saveTarget = null;   // one file per choice
+                if (target == null || !target.toString().equals(u)) throw new Exception("not the place chosen in the save screen");
+                openFile = getContext().getContentResolver().openOutputStream(target, "wt");
             }
             if (openFile == null) throw new Exception("could not open the file");
             openFile.write(Base64.decode(call.getString("data", ""), Base64.DEFAULT));

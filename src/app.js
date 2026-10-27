@@ -61,10 +61,10 @@
     for (const it of list) {
       if (state.files.length >= MAX_FILES) { skipped++; continue; }
       // an item is a File (browser), or { name, bytes, source } from the Android app, where source is the file's address
-      // so its clean copy can be saved back in the same folder
-      const item = it instanceof Blob ? it : it;
-      const name = item.name || it.name || 'file', bytesIn = item instanceof Blob ? null : it.bytes;
-      const sz = bytesIn ? bytesIn.length : item.size;
+      // so its clean copy can be saved back in the same folder (bytes is null, with size, when the file was too large to read)
+      const item = it;
+      const name = item.name || 'file', bytesIn = item instanceof Blob ? null : it.bytes;
+      const sz = bytesIn ? bytesIn.length : +item.size || 0;
       if (sz > MAX_BYTES) { toast(`${name} is too large (over ${size(MAX_BYTES)}).`); continue; }
       const f = { id: ++state.seq, name, size: sz, bytes: null, det: null, insp: null, nameF: C.nameFindings(name), pdf: { attachments: true, scripts: true, comments: true }, out: null, url: null, li: null, error: '',
         source: it.source || '' };

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.4
+Fixes from a public code review by CodeRabbit (all 12 comments).
+- Photos: a thumbnail stored inside a JPEG's JFIF header (rare, but some older apps write one) is now listed and
+  removed, together with any other bytes after the header.
+- Very large or deliberately malformed text in a photo or PDF (XMP, XFA forms) can no longer make the page hang:
+  every scan now goes through the text once.
+- Android app: a file over the 300 MB limit is refused before it is read, so it can't run the app out of memory, and
+  a clean copy can be written only to the place chosen in Android's save screen.
+- Release builds: the APK is built without access to the signing key or to write access on GitHub, signed in a
+  separate step, and published in a third. Pushing a tag no longer starts a build (releases are started by hand).
+- Tests check the page's Content Security Policy directive by directive, and that every file the website serves
+  is up to date. The security notes say exactly what the policy covers.
+
 ## 0.1.3
 - **Digitally signed PDFs:** the signature is listed with the signer's details (name, date, place, email, reason)
   and removed, together with its certificate and the signer's name drawn in the signature box. Any change to a

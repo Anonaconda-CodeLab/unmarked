@@ -1,11 +1,14 @@
 # Never commit files you cleaned (or their originals): only the test fixtures are tracked
-*.jpg
-*.jpeg
-*.png
-*.webp
-*.heic
-*.pdf
-*.zip
+# (patterns ignore case: phones save IMG_0001.JPG)
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+*.[pP][nN][gG]
+*.[wW][eE][bB][pP]
+*.[hH][eE][iI][cC]
+*.[hH][eE][iI][fF]
+*.[aA][vV][iI][fF]
+*.[pP][dD][fF]
+*.[zZ][iI][pP]
 !tests/fixtures/*
 !src/icons/*
 !dist/*.png

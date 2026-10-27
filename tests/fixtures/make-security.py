@@ -85,3 +85,11 @@ b = io.BytesIO(); im.save(b, 'PNG'); p = b.getvalue()
 chunk = lambda t, x: struct.pack('>I', len(x)) + t + x + struct.pack('>I', zlib.crc32(t + x) & 0xffffffff)
 splt = b'SECRET-IN-sPLT\x00' + bytes([8]) + bytes([255, 0, 0, 255, 0, 1])
 open('hidden.png', 'wb').write(p[:33] + chunk(b'sPLT', splt) + chunk(b'SECr', b'SECRET-IN-CRITICAL') + p[33:])
+
+# 0.1.4 (CodeRabbit #9): a JFIF header carrying its own thumbnail (an 8 × 6 copy of the picture, stored uncompressed
+# right after the 14-byte header) and a few more bytes after it. Pillow never writes one, so it is put in by hand.
+assert j[2:4] == b'\xff\xe0' and j[6:11] == b'JFIF\x00'
+n = struct.unpack('>H', j[4:6])[0]
+thumb = im.resize((8, 6)).tobytes()   # 8 × 6 × 3 = 144 bytes of RGB
+jfif = j[6:6 + 12] + bytes([8, 6]) + thumb + b'SECRET-AFTER-JFIF'
+open('jfif-thumb.jpg', 'wb').write(j[:2] + seg(0xE0, jfif) + j[4 + n:])

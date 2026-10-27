@@ -313,6 +313,57 @@ test('compressed data that unpacks to too much is treated as damaged, without fr
   assert.ok(Date.now() - t < 20000, 'finished in reasonable time');
 });
 
+// ---------- 0.1.4: CodeRabbit review ----------
+test('JPEG: a thumbnail inside the JFIF header is listed and removed (#9)', async () => {
+  const src = fx('jfif-thumb.jpg'), seg0 = b => C._internal.jpegSegments(b).segs[0];
+  const s = seg0(src);
+  assert.deepEqual([src[s.d + 12], src[s.d + 13]], [8, 6], 'the test file holds an 8 × 6 thumbnail');
+  const r = await C.inspect(src, base), t = r.findings.find(f => f.id === 'thumb');
+  assert.ok(t && t.risk === 'high' && C.isRemoved(t, {}));
+  const out = (await C.clean(src, base)).bytes, o = seg0(out);
+  assert.equal(o.m, 0xe0);
+  assert.equal(o.e - o.d, 14, 'bare JFIF header');
+  assert.deepEqual([...out.subarray(o.d, o.d + 5)], [...Buffer.from('JFIF\0')]);
+  assert.deepEqual([out[o.d + 12], out[o.d + 13]], [0, 0], 'no thumbnail');
+  assert.deepEqual([...out.subarray(o.d + 5, o.d + 12)], [...src.subarray(s.d + 5, s.d + 12)], 'version and density unchanged');
+  assert.ok(!has(out, 'SECRET-AFTER-JFIF'));
+  const thumb = Buffer.from(src.subarray(s.d + 14, s.d + 14 + 144));
+  assert.ok(!Buffer.from(out).includes(thumb), 'thumbnail pixels gone');
+  assert.deepEqual(ids(await C.inspect(out, base)), []);
+  const from = b => { const x = C._internal.jpegSegments(b).segs.find(y => y.m === 0xdb); return Buffer.from(b.subarray(x.s)); };
+  assert.ok(from(src).equals(from(out)), 'picture data unchanged');
+  // an ordinary JFIF header (no thumbnail) comes out byte for byte
+  assert.ok(Buffer.from((await C.clean(fx('plain.jpg'), base)).bytes).equals(Buffer.from(fx('plain.jpg'))));
+});
+
+test('hostile XMP and XFA text is scanned in linear time (#8)', async () => {
+  // many openers and no closer: the old patterns retried from each opener (64,000 of them took about 19 s)
+  const enc = new TextEncoder(), crc = C._internal.crc32, png = fx('image.png');
+  const withText = xml => {
+    const body = enc.encode('XML:com.adobe.xmp\0\0\0\0\0' + xml), type = enc.encode('iTXt');
+    const ch = Buffer.alloc(12 + body.length); ch.writeUInt32BE(body.length); ch.set(type, 4); ch.set(body, 8);
+    ch.writeUInt32BE(crc(Buffer.concat([type, body])), 8 + body.length);
+    return new Uint8Array(Buffer.concat([png.subarray(0, 33), ch, png.subarray(33)]));
+  };
+  for (const xml of ['<dc:creator>'.repeat(200000), '<rdf:li>'.repeat(200000), '<dc:creator x="'.repeat(100000), 'dc:creator="'.repeat(100000) + 'x', '<' .repeat(2000000)]) {
+    const t = Date.now(), r = await C.inspect(withText(xml), base);
+    assert.ok(Date.now() - t < 2000, `took ${Date.now() - t} ms`);
+    assert.ok(Array.isArray(r.findings) && !r.error);
+  }
+  // findings still read ordinary XMP correctly
+  const ok = await C.inspect(withText('<x:xmpmeta><rdf:Description photoshop:City="Paris"><dc:creator><rdf:Seq><rdf:li>Ann <b>Lee</b></rdf:li><rdf:li>Bo</rdf:li></rdf:Seq></dc:creator></rdf:Description></x:xmpmeta>'), base);
+  assert.match(ok.findings.find(f => f.id === 'artist').value, /^Ann Lee, Bo\b/);   // (image.png adds its own author after)
+  assert.match(ok.findings.find(f => f.id === 'place').value, /^Paris\b/);
+  // XFA: a form whose XML has thousands of <submit openers
+  const doc = await PDFLib.PDFDocument.create(); doc.addPage();
+  const xfa = doc.context.register(doc.context.flateStream('<submit '.repeat(300000) + '<submit target="https://late.example.com"/><script>x</script>'));
+  const field = doc.context.register(doc.context.obj({ FT: 'Tx', T: PDFLib.PDFString.of('a') }));
+  doc.catalog.set(N('AcroForm'), doc.context.obj({ Fields: [field], XFA: xfa }));
+  const t = Date.now(), r = await C.inspect(await doc.save(), base);
+  assert.ok(Date.now() - t < 3000, `XFA took ${Date.now() - t} ms`);
+  assert.ok(ids(r).includes('scripts'), 'still found and offered for removal');
+});
+
 test('file names that give things away', () => {
   assert.equal(C.nameFindings('IMG_20261024_143512.jpg')[0].id, 'filename-date');
   assert.match(C.nameFindings('PXL_20260101_101010123.jpg')[0].value, /date and time/);
@@ -339,7 +390,7 @@ test('zip: stored files, fixed dates, duplicate names renamed', () => {
 });
 
 test('damaged and hostile files never crash inspection', async () => {
-  const files = ['photo-full.jpg', 'motion.jpg', 'image.png', 'image.webp', 'doc.pdf', 'icc.jpg', 'p3.jpg', 'p3.png', 'p3.webp', 'signed.pdf', 'xfa.pdf', 'submit.pdf', 'hidden.jpg', 'hidden.png'];
+  const files = ['photo-full.jpg', 'motion.jpg', 'image.png', 'image.webp', 'doc.pdf', 'icc.jpg', 'p3.jpg', 'p3.png', 'p3.webp', 'signed.pdf', 'xfa.pdf', 'submit.pdf', 'hidden.jpg', 'hidden.png', 'jfif-thumb.jpg'];
   let seed = 7; const rnd = n => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) % n;
   for (const f of files) {
     const src = fx(f);

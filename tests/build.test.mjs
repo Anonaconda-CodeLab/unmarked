@@ -6,11 +6,32 @@ import { readFileSync, existsSync } from 'node:fs';
 const dist = f => readFileSync(new URL('../dist/' + f, import.meta.url), 'utf8');
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
+// a Content-Security-Policy as { directive: [sources] }; a directive given twice is an error (browsers use the first one)
+function parseCsp(text) {
+  const out = {};
+  for (const part of text.split(';').map(x => x.trim()).filter(Boolean)) {
+    const [name, ...values] = part.split(/\s+/), key = name.toLowerCase();
+    assert.ok(!(key in out), 'directive given twice: ' + key);
+    out[key] = values;
+  }
+  return out;
+}
+const NONE = ['default-src', 'connect-src', 'worker-src', 'form-action', 'frame-src', 'object-src', 'base-uri', 'media-src'];
+
+test('CSP parser catches what a substring check would miss', () => {
+  assert.deepEqual(parseCsp("default-src 'none'; connect-src 'none' https://x")['connect-src'], ["'none'", 'https://x']);
+  assert.throws(() => parseCsp("connect-src 'none'; connect-src https://x"), /twice/);
+});
+
 test('page blocks all network access', () => {
   const html = dist('index.html');
-  const csp = /http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(html)[1];
-  for (const d of ["default-src 'none'", "connect-src 'none'", "worker-src 'none'", "form-action 'none'", "frame-src 'none'"]) assert.ok(csp.includes(d), d);
-  assert.ok(!csp.includes('unsafe-eval'));
+  const csp = parseCsp(/http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(html)[1]);
+  for (const d of NONE) assert.deepEqual(csp[d], ["'none'"], d + " must be exactly 'none'");
+  assert.ok(!Object.values(csp).flat().includes("'unsafe-eval'"));
+  // the same in the site's HTTP headers, for every rule that sets a policy
+  const rules = [...dist('_headers').matchAll(/Content-Security-Policy:\s*(.+)/g)].map(m => parseCsp(m[1]));
+  assert.ok(rules.length >= 1);
+  for (const r of rules) for (const d of ['connect-src', 'object-src', 'base-uri', 'form-action', 'frame-ancestors']) assert.deepEqual(r[d], ["'none'"], 'headers: ' + d);
   assert.ok(!/<script[^>]+src=/i.test(html), 'no external scripts');
   assert.ok(!/sourceMappingURL/.test(html), 'no source map reference');
 });

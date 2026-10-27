@@ -255,16 +255,50 @@
   }
 
   // ---------- XMP (text) ----------
-  function xmpFindings(xml, where) {
+  // Every scan below goes forward once: patterns like <tag>...</tag> retried from each opener take quadratic time on a
+  // file built with thousands of openers and no closer, which would freeze the page. Findings also read at most
+  // XMP_SCAN of the text; cleaning removes XMP blocks whole, so this limits only the list.
+  const XMP_SCAN = 1024 * 1024;
+  function stripTags(s) {
+    let out = '', i = 0;
+    for (;;) {
+      const lt = s.indexOf('<', i); if (lt < 0) return out + s.slice(i);
+      out += s.slice(i, lt);
+      const gt = s.indexOf('>', lt); if (gt < 0) return out;
+      i = gt + 1;
+    }
+  }
+  function attrValue(xml, name) {   // name="value" or name='value': the first one only
+    const m = new RegExp(`\\b${name}\\s*=\\s*(["'])`).exec(xml); if (!m) return null;
+    const start = m.index + m[0].length, end = xml.indexOf(m[1], start);
+    return end < 0 ? null : xml.slice(start, end);
+  }
+  function elementText(xml, name) {   // what is inside the first <name ...>...</name>
+    const m = new RegExp(`<${name}(?=[\\s/>])`).exec(xml); if (!m) return null;
+    const gt = xml.indexOf('>', m.index); if (gt < 0 || xml[gt - 1] === '/') return null;
+    const end = xml.indexOf(`</${name}>`, gt);
+    return end < 0 ? null : xml.slice(gt + 1, end);
+  }
+  function listItems(s) {   // the <rdf:li> items of a list
     const out = [];
-    if (!xml) return out;
+    for (let i = 0; ;) {
+      const o = s.indexOf('<rdf:li', i); if (o < 0) break;
+      const gt = s.indexOf('>', o); if (gt < 0) break;
+      if (s[gt - 1] === '/') { i = gt + 1; continue; }
+      const c = s.indexOf('</rdf:li>', gt); if (c < 0) break;
+      out.push(s.slice(gt + 1, c)); i = c + 9;
+    }
+    return out;
+  }
+  function xmpFindings(full, where) {
+    const out = [];
+    if (!full) return out;
+    const xml = full.length > XMP_SCAN ? full.slice(0, XMP_SCAN) : full;
     const one = name => {
-      const a = new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`).exec(xml) || new RegExp(`\\b${name}\\s*=\\s*'([^']*)'`).exec(xml);
-      if (a) return a[1];
-      const e = new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`).exec(xml);
-      if (!e) return '';
-      const li = e[1].match(/<rdf:li\b[^>]*>([\s\S]*?)<\/rdf:li>/g);
-      return li ? li.map(x => x.replace(/<[^>]+>/g, '')).filter(Boolean).join(', ') : e[1].replace(/<[^>]+>/g, '');
+      const a = attrValue(xml, name); if (a != null) return a;
+      const e = elementText(xml, name); if (e == null) return '';
+      const li = listItems(e);
+      return li.length ? li.map(stripTags).filter(Boolean).join(', ') : stripTags(e);
     };
     const unxml = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
     const add = (id, label, names, risk, extra) => {
@@ -289,7 +323,7 @@
     if (/photoshop:DocumentAncestors/.test(xml)) out.push(F('ancestors', 'Source file IDs', 'IDs of other files that were pasted into this one', 'medium'));
     if (/GCamera:Motion|Camera:MotionPhoto|GCamera:MicroVideo|Container:Directory/.test(xml)) out.push(F('motion', 'Motion photo', 'a short video clip stored with the photo', 'high', { note: 'The clip and its sound are removed too.' }));
     if (/GDepth:|GImage:|hdrgm:/.test(xml)) out.push(F('depth', 'Extra image layers', 'depth map or other hidden images', 'medium'));
-    if (!out.length) out.push(F('xmp', 'XMP metadata', kb(xml.length) + ' of extra data', 'low'));
+    if (!out.length) out.push(F('xmp', 'XMP metadata', kb(full.length) + ' of extra data', 'low'));
     if (where) out.forEach(f => { f.where = where; });
     return out;
   }
@@ -444,7 +478,10 @@
   }
   // JPEG-LS uses two of the reserved markers (FFF7 frame, FFF8 parameters) for the picture itself
   const isJpegLs = segs => segs.some(s => s.m === 0xf7);
-  const ADOBE_LEN = 12;   // 'Adobe', version, two flag words and the colour transform: anything after it is extra
+  const ADOBE_LEN = 12;
+  // JFIF header: 'JFIF\0', version, density units, X and Y density, then the thumbnail's width and height (0 = none)
+  // and its pixels (3 bytes each). Only those first 14 bytes are needed; a clean copy says "no thumbnail".
+  const JFIF_LEN = 14;   // 'Adobe', version, two flag words and the colour transform: anything after it is extra
   // a JPEG colour profile may be split over several APP2 segments, numbered 1..count
   function jpegIcc(b, segs) {
     const parts = segs.filter(s => appId(b, s) === 'icc');
@@ -472,7 +509,11 @@
       else if (id === 'com') addOnce(out, F('comment', 'Comment', text(b.subarray(s.d, s.e)), 'medium'));
       else if (id === 'adobe') { if (s.e - s.d > ADOBE_LEN) addOnce(out, F('appdata', 'Other app data', 'extra data added to the Adobe colour block', 'low')); }
       else if (id === 'jpgn') { if (!(isJpegLs(segs) && (s.m === 0xf7 || s.m === 0xf8))) addOnce(out, F('appdata', 'Other app data', 'data in reserved JPEG markers', 'low')); }
-      else if (id === 'jfif') continue;
+      else if (id === 'jfif') {
+        const tw = b[s.d + 12] || 0, th = b[s.d + 13] || 0;
+        if (s.e - s.d >= JFIF_LEN && tw * th) addOnce(out, F('thumb', 'Embedded thumbnail', 'a small copy of the original picture', 'high', { note: 'It can still show parts of the photo you cropped out or edited.' }));
+        else if (s.e - s.d > JFIF_LEN) addOnce(out, F('appdata', 'Other app data', 'extra data added to the JFIF header', 'low'));
+      }
       else if (id === 'jfxx') addOnce(out, F('thumb', 'Embedded thumbnail', 'a small copy of the original picture', 'high', { note: 'It can still show parts of the photo you cropped out or edited.' }));
       else addOnce(out, F('appdata', 'Other app data', 'private data added by a camera or app', 'low'));
     }
@@ -494,7 +535,11 @@
     const addExif = () => { if (!inserted && exif) { const head = new Uint8Array(10); const n = exif.length + 8; head.set([0xff, 0xe1, n >> 8, n & 255, 0x45, 0x78, 0x69, 0x66, 0, 0]); parts.push(head, exif); } inserted = true; };
     for (const s of segs) {
       const id = appId(b, s);
-      if (id === 'jfif') { parts.push(b.subarray(s.s, s.e)); continue; }
+      if (id === 'jfif') {
+        if (s.e - s.d < JFIF_LEN) parts.push(b.subarray(s.s, s.e));   // too short to hold anything extra: as it is
+        else { const h = b.slice(s.d - 4, s.d + JFIF_LEN); h[2] = 0; h[3] = JFIF_LEN + 2; h[16] = 0; h[17] = 0; parts.push(h); }
+        continue;
+      }
       if (!inserted && id !== 'jfif') addExif();
       if (id === 'icc') { if (icc.plan.kind === 'other' && s === icc.parts[0]) parts.push(...jpegIccSegments(b, icc)); }
       else if (id === 'adobe') parts.push(s.e - s.d > ADOBE_LEN ? concat([new Uint8Array([0xff, 0xee, 0, ADOBE_LEN + 2]), b.subarray(s.d, s.d + ADOBE_LEN)]) : b.subarray(s.s, s.e));
@@ -545,8 +590,9 @@
     return out;
   }
   const hexProfile = s => {   // ImageMagick "Raw profile type exif": "\nexif\n   1234\n4578696600..."
-    const m = /^\s*\S+\s+\d+\s+([0-9a-fA-F\s]+)$/.exec(s || ''); if (!m) return null;
-    const hex = m[1].replace(/\s+/g, ''); const a = new Uint8Array(hex.length >> 1);
+    const m = /^\s*\S+\s+\d+\s/.exec(s || ''); if (!m) return null;   // the header, then the hex checked separately (one pass)
+    const hex = s.slice(m[0].length).replace(/\s+/g, ''); if (!/^[0-9a-fA-F]*$/.test(hex)) return null;
+    const a = new Uint8Array(hex.length >> 1);
     for (let i = 0; i < a.length; i++) a[i] = parseInt(hex.substr(i * 2, 2), 16);
     return a;
   };
@@ -734,7 +780,13 @@
     const streams = K.isArr(x) ? x.asArray().map(v => ctx.lookup(v)).filter(K.isStream) : K.isStream(x) ? [x] : [];
     const xml = streams.map(s => { const r = pdfDecode(s, lib); return r ? latin1(r) : '<script>'; }).join('\n');   // unreadable: assume the worst
     const fields = af.lookup(K.N('Fields')), needs = doc.catalog.lookup(K.N('NeedsRendering'));
-    const submits = [...xml.matchAll(/<submit\b[^>]*\btarget\s*=\s*["']([^"']+)/gi)].map(m => hostOf(m[1]));
+    const submits = [], low = xml.toLowerCase();   // not capped: removing XFA depends on what is found here
+    for (let i = 0, n = 0; n < 200; n++) {   // each <submit ...> tag once, looking only inside the tag
+      const o = low.indexOf('<submit', i); if (o < 0) break;
+      const gt = low.indexOf('>', o), tag = xml.slice(o, Math.min(gt < 0 ? xml.length : gt, o + 500));
+      const m = /\btarget\s*=\s*["']([^"']+)/i.exec(tag); if (m) submits.push(hostOf(m[1]));
+      i = o + 7;
+    }
     return { af, scripts: /<script\b/i.test(xml), submits, dynamic: !(K.isArr(fields) && fields.size()) || String(needs) === 'true' };
   }
   // a photo placed in the PDF: the JPEG data, after undoing any text encoding (ASCII85, hex, Flate) wrapped around it
