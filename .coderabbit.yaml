@@ -1,0 +1,46 @@
+# CodeRabbit settings for the one-off full review of Unmarked (PR from full-review into review-base, never merged)
+language: en-GB
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "review-base"
+  # built output, bundled libraries, fonts, test files and Android tooling: not our code, or generated from it
+  path_filters:
+    - "!dist/**"
+    - "!src/vendor/**"
+    - "!src/fonts/**"
+    - "!src/icons/**"
+    - "!tests/fixtures/**"
+    - "!mobile/package-lock.json"
+    - "!mobile/android/gradle/**"
+    - "!mobile/android/gradlew"
+    - "!mobile/android/gradlew.bat"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.woff2"
+  path_instructions:
+    - path: "**"
+      instructions: |
+        Unmarked removes hidden data (metadata) from photos and PDFs entirely on the device. By design it has no
+        network access: the page's Content Security Policy has connect-src 'none' and the Android app has no
+        INTERNET permission. Focus on security and privacy: hidden data that could survive cleaning, untrusted input
+        reaching the page unescaped, and robustness against malicious files.
+    - path: "src/clean.js"
+      instructions: |
+        Parsers for JPEG, PNG, WebP and PDF that run on untrusted files. Look for metadata that survives cleaning,
+        out-of-bounds or wrong byte offsets, infinite loops and unbounded allocations.
+    - path: "src/app.js"
+      instructions: |
+        File names and metadata values are untrusted: they must never reach innerHTML without escaping.
+    - path: "mobile/**/*.java"
+      instructions: |
+        Android plugin: check intent handling, URI validation and what the FileProvider exposes.
+    - path: ".github/workflows/**"
+      instructions: |
+        Release pipeline holding the studio's signing key: check secret handling and supply-chain risks.
