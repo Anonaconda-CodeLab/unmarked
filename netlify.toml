@@ -1,3 +1,4 @@
-# Netlify: skip the deploy unless the published site (dist/) changed. Exit 0 = skip, 1 = deploy.
+# This site has moved to Cloudflare Pages. Netlify skips every build (exit 0 = skip, which costs no credits) until the
+# old Netlify project is deleted; then this file can go.
 [build]
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- dist"
+  ignore = "exit 0"

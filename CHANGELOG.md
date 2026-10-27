@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1
+- Links open in the same tab, and leaving the page after cleaning asks first, so clean copies aren't lost.
+- File names and the hidden data found are marked so a browser's Translate button leaves them out (translation
+  sends the page's text to an online service). The manual explains this, and that opening the web app is an
+  ordinary website visit.
+- **New home:** the website moved to Cloudflare Pages, with stricter security headers: no other site can show
+  the app inside its own page, and browsers always use HTTPS.
+- Shorter thank-you line at the bottom of the start screen.
+
 ## 0.1.0
 - First version. Finds and removes hidden data in JPEG, PNG and WebP photos and PDF documents, entirely on the device:
   location, names, device details and serial numbers, dates and time zones, embedded thumbnails, motion-photo clips,

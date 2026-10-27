@@ -3,8 +3,10 @@
 ## Design
 - **No network access.** The built page carries a Content Security Policy (`default-src 'none'; connect-src 'none'`) so the
   app cannot send or fetch anything, even if malicious code were injected. Fonts and pdf-lib are embedded; there are no
-  external scripts, analytics or trackers. The only outbound links are optional *Source code* / *Support on Ko-fi* buttons,
-  which open in a new, isolated tab (`rel="noopener noreferrer"`).
+  external scripts, analytics or trackers. The only outbound links are optional *Source code* / *Support on Ko-fi* buttons
+  and links in the manual, which open in the same tab (`rel="noopener noreferrer"`); the page asks first if clean copies
+  would be lost. The site's HTTP headers (`dist/_headers`) add a second block on connections and stop other sites
+  from framing the app.
 - **Nothing stored.** Files are held in memory while the page is open and are gone when it closes. The only thing kept on
   the device is the three option settings and a count of cleaning runs, used only for an occasional donation
   request (browser localStorage).

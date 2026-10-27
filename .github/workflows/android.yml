@@ -39,16 +39,16 @@ jobs:
         run: npm ci && npx cap sync android
       - name: Signing key
         env:
-          # the studio's shared signing key (STUDIO_*); the older LEADONE_* names still work as a fallback
-          KS: ${{ secrets.STUDIO_KEYSTORE_B64 || secrets.LEADONE_KEYSTORE_B64 }}
+          # the studio's shared signing key, used by every studio app
+          KS: ${{ secrets.LEADONE_KEYSTORE_B64 }}
         run: |
           if [ -n "$KS" ]; then echo "$KS" | base64 -d > "$RUNNER_TEMP/studio.jks"; echo "LEADONE_KEYSTORE=$RUNNER_TEMP/studio.jks" >> "$GITHUB_ENV"; fi
       - name: Build the APK
         working-directory: mobile/android
         env:
-          LEADONE_KEYSTORE_PASSWORD: ${{ secrets.STUDIO_KEYSTORE_PASSWORD || secrets.LEADONE_KEYSTORE_PASSWORD }}
-          LEADONE_KEY_PASSWORD: ${{ secrets.STUDIO_KEYSTORE_PASSWORD || secrets.LEADONE_KEYSTORE_PASSWORD }}
-          LEADONE_KEY_ALIAS: ${{ secrets.STUDIO_KEY_ALIAS || 'leadone' }}
+          LEADONE_KEYSTORE_PASSWORD: ${{ secrets.LEADONE_KEYSTORE_PASSWORD }}
+          LEADONE_KEY_PASSWORD: ${{ secrets.LEADONE_KEYSTORE_PASSWORD }}
+          LEADONE_KEY_ALIAS: leadone
         run: chmod +x gradlew && ./gradlew --no-daemon assembleRelease
       - name: Require the release key
         run: |

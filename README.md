@@ -39,7 +39,8 @@ Tests use real files in `tests/fixtures/`, made with ExifTool, Pillow, reportlab
 (`tests/fixtures/make-fixtures.sh` rebuilds them). The Android app is in `mobile/` (see `mobile/README.md`).
 
 ### Hosting your own copy
-Host the `dist/` folder anywhere that serves https. Netlify deploys only when `dist/` changes (`netlify.toml`).
+Host the `dist/` folder anywhere that serves https. The official site is on Cloudflare Pages, which publishes `dist/`
+as committed (no build command), with the HTTP headers in `dist/_headers`.
 
 ## Disclaimer
 Unmarked is provided **as is, without any warranty**. It removes the hidden data it knows about, but no tool can

@@ -1,6 +1,6 @@
 {
   "name": "unmarked",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Remove hidden data (location, camera details, names, edit history) from photos and PDFs, entirely on your device.",
   "private": true,
   "type": "module",
