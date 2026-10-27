@@ -1,0 +1,110 @@
+<!-- Copyright (C) 2026 Anonaconda Code Lab · SPDX-License-Identifier: GPL-3.0-or-later -->
+<main id="app">
+  <header class="bar">
+    <button class="brand" id="btnHome" aria-label="{{APP_NAME}}: start">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="8" fill="var(--accent)"/><path d="M16 7.2a5.9 5.9 0 0 1 5.9 5.9c0 4.4-5.9 10.9-5.9 10.9s-5.9-6.5-5.9-10.9A5.9 5.9 0 0 1 16 7.2z" fill="none" stroke="var(--accent-fg)" stroke-width="2.1" stroke-linejoin="round"/><circle cx="16" cy="13.1" r="2" fill="var(--accent-fg)"/><path d="M8.5 23.5 23.5 8.5" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/><path d="M8.5 23.5 23.5 8.5" stroke="var(--accent-fg)" stroke-width="2.1" stroke-linecap="round"/></svg>
+      <span>{{APP_NAME}}</span>
+    </button>
+    <button id="btnAbout" class="icon-btn" aria-label="About and help" title="About and help">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.6v.2"/></svg>
+    </button>
+  </header>
+
+  <!-- HOME: pick files, see what's inside, clean -->
+  <section id="scrHome" class="screen">
+    <div class="intro" id="intro">
+      <h1>Remove the hidden data in your photos and PDFs</h1>
+      <p>Photos and documents carry details you can't see: where a photo was taken, which phone took it, who wrote a document and what was deleted from it. {{APP_NAME}} shows you what's there and removes it.</p>
+      <p class="trust"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>Your files never leave this device. Nothing is uploaded.</p>
+    </div>
+
+    <label class="drop" id="drop">
+      <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.heic,.heif,image/jpeg,image/png,image/webp,application/pdf,image/heic">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4.5 14.5v3a2.5 2.5 0 0 0 2.5 2.5h10a2.5 2.5 0 0 0 2.5-2.5v-3"/></svg>
+      <span class="drop-main" id="dropMain">Choose photos or PDFs</span>
+      <span class="drop-sub" id="dropSub">JPEG, PNG, WebP and PDF<span class="no-touch"> · or drop files here</span></span>
+    </label>
+
+    <ul class="files" id="files" aria-live="polite"></ul>
+
+    <div class="card" id="optCard" hidden>
+      <div class="dev-name">Options</div>
+      <label class="check"><input type="checkbox" id="optDate"><span><b>Keep the date taken</b><small>Leaves the date and time a photo was taken (not the time zone). Everything else is removed.</small></span></label>
+      <label class="check"><input type="checkbox" id="optCopyright"><span><b>Keep copyright notices</b><small>For photographers and artists who want their copyright line to stay with the picture.</small></span></label>
+      <label class="check"><input type="checkbox" id="optNames"><span><b>Give files plain names</b><small>Replaces names like <code>IMG_20261024_143512.jpg</code>, which reveal the date, with <code>image-01.jpg</code>.</small></span></label>
+    </div>
+
+    <div class="actions" id="actions" hidden>
+      <button id="btnClean" class="btn-start" disabled><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h7"/><path d="m14.5 4.5 5 5-8 8H6.5v-5z"/></svg><span id="btnCleanLbl">Remove hidden data</span></button>
+      <p class="hint" id="cleanHint"></p>
+    </div>
+
+    <div class="actions" id="doneActions" hidden>
+      <div class="done-hero"><h2 id="doneTitle">Done</h2><p id="doneSub"></p></div>
+      <div class="acts-row center-row">
+        <button id="btnSaveAll" class="btn primary">Save</button>
+        <button id="btnShareAll" class="btn" hidden>Share</button>
+        <button id="btnRestart" class="btn">Clean more files</button>
+      </div>
+      <p class="hint" id="saveHint"></p>
+      {{DONATE}}
+    </div>
+
+    <div class="card uses" id="uses">
+      <h2 class="limits-title">Why use it</h2>
+      <ul>
+        <li><b>Selling something online.</b> A photo of the item, taken at home, can show exactly where you live.</li>
+        <li><b>Photos of your children.</b> Pictures taken at home, school or the park can reveal where they spend their days.</li>
+        <li><b>Sending files, not posting them.</b> Big social networks usually remove hidden data, but email, cloud links, “send as file” in chat apps, and many forums and marketplaces pass it on untouched.</li>
+        <li><b>Documents for a landlord, employer or school.</b> A PDF can carry your name, the computer it was made on, comments, and earlier versions with text you deleted.</li>
+        <li><b>Job applications.</b> A CV made from an old template can still carry a previous author's name or your current employer's.</li>
+        <li><b>Meeting people online.</b> Photos for a dating profile or a new contact can give away your home or workplace.</li>
+        <li><b>Reporting something anonymously.</b> A photo or document can say which phone or computer made it, and who owns it.</li>
+      </ul>
+    </div>
+
+    <div class="card limits" id="limits">
+      <h2 class="limits-title">What {{APP_NAME}} can't remove</h2>
+      <ul>
+        <li><b>What you can see.</b> Faces, street signs, house numbers, number plates, reflections and text in the picture or on the page stay as they are. Crop or cover them first.</li>
+        <li><b>Your phone's own records.</b> Your gallery, cloud backups and the original file keep their data. {{APP_NAME}} makes a clean copy; it doesn't change the original.</li>
+        <li><b>Clues in the content itself.</b> Writing style, tracked changes already accepted into a document, or a scan's visible stamps and signatures.</li>
+      </ul>
+      <p class="as-is" id="asIs"><b>No guarantee.</b> {{APP_NAME}} is free software provided as it is, without any warranty. It removes the hidden data it knows about, but no tool can promise to find everything. Check the clean copy before you share anything sensitive. You are responsible for what you share, and Anonaconda Code Lab accepts no liability for any loss or harm from using this app.</p>
+    </div>
+    {{THANKS}}
+  </section>
+
+  <!-- ABOUT -->
+  <section id="scrAbout" class="screen" hidden>
+    <div class="intro"><h1>About and help</h1></div>
+    <div class="links">
+      <button class="row-btn" id="btnHelp"><span>User manual<small>What gets removed, what's kept, and why</small></span><span class="chev">›</span></button>
+    </div>
+    {{ABOUT}}
+    <div class="acts-row"><button class="btn" id="btnAboutBack">Back</button></div>
+  </section>
+
+  <!-- MANUAL -->
+  <section id="scrHelp" class="screen" hidden>
+    <div class="acts-row"><button class="btn" id="btnHelpBack">‹ Back</button></div>
+    <article class="manual" id="manual">{{MANUAL}}</article>
+  </section>
+</main>
+
+<template id="tplFile">
+  <li class="file">
+    <div class="file-top">
+      <div class="thumb"></div>
+      <div class="file-meta" translate="no">
+        <b class="file-name"></b>
+        <span class="file-sub"></span>
+      </div>
+      <button class="icon-btn small file-remove" aria-label="Remove from the list" title="Remove from the list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="file-status"></div>
+    <div class="pdf-opts" hidden></div>
+    <details class="findings" hidden><summary></summary><ul></ul></details>
+    <div class="file-acts" hidden></div>
+  </li>
+</template>

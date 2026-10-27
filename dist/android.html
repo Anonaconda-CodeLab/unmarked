@@ -1,0 +1,88 @@
+<!doctype html>
+<!-- Copyright (C) 2026 Anonaconda Code Lab · SPDX-License-Identifier: GPL-3.0-or-later
+     The Android download page. The app's "Check for updates" button opens it as android.html?v=<installed version>. -->
+<html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f6b62">
+<meta name="description" content="Install Unmarked on Android: official download, how to check it, and how to keep it up to date.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Unmarked for Android</title>
+<style>
+:root{--bg:#f4f1f1;--surface:#fff;--fg:#1e1a20;--muted:#655f69;--line:#e0d9da;--accent:#0f6b62;--ok:#1b7655;--ok-soft:#dcefe5;--warn-soft:#f9ebd3;--code:#ece7e7}
+@media (prefers-color-scheme:dark){:root{--bg:#141215;--surface:#1f1c21;--fg:#eee9ec;--muted:#a59da8;--line:#38323a;--accent:#4fd1c0;--ok:#5cc49a;--ok-soft:#1d3a2f;--warn-soft:#3b2f1a;--code:#2a252c;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:680px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-left)) 48px max(16px,env(safe-area-inset-right))}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;margin-bottom:18px}
+.brand svg{width:34px;height:34px}
+h1{font-size:30px;line-height:1.15;margin:0 0 8px;text-wrap:balance}
+h2{font-size:19px;margin:30px 0 8px}
+p,li{max-width:62ch}
+a{color:var(--accent)}
+.lead{color:var(--muted);margin:0 0 18px}
+.banner{border-radius:14px;padding:14px 16px;margin:0 0 18px;font-weight:600}
+.banner.ok{background:var(--ok-soft)}
+.banner.new{background:var(--warn-soft)}
+.dl{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;border-radius:999px;padding:14px 26px;font-size:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 18px 14px;margin:14px 0}
+ol,ul{padding-left:22px}
+li{margin:6px 0}
+code,.fp{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;background:var(--code);border-radius:6px;padding:1px 6px}
+.fp{display:block;padding:10px 12px;word-break:break-all;line-height:1.6;margin:8px 0}
+.muted{color:var(--muted);font-size:14px}
+footer{margin-top:34px;color:var(--muted);font-size:14px}
+</style></head><body><main>
+<div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="8" fill="#0f6b62"/><path d="M16 7.2a5.9 5.9 0 0 1 5.9 5.9c0 4.4-5.9 10.9-5.9 10.9s-5.9-6.5-5.9-10.9A5.9 5.9 0 0 1 16 7.2z" fill="none" stroke="#fff" stroke-width="2.1" stroke-linejoin="round"/><circle cx="16" cy="13.1" r="2" fill="#fff"/><path d="M8.5 23.5 23.5 8.5" stroke="#0f6b62" stroke-width="5" stroke-linecap="round"/><path d="M8.5 23.5 23.5 8.5" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/></svg>Unmarked</div>
+<h1>Unmarked for Android</h1>
+<p class="lead">The same app as the web version, plus <b>Share → Unmarked</b> from your gallery or any other app. Free and open source. It has no internet permission: your files never leave your phone.</p>
+<div id="status" class="banner" hidden></div>
+<p><a class="dl" href="https://github.com/Anonaconda-CodeLab/unmarked/releases/latest">Download the latest version</a></p>
+<p class="muted">Latest version: 0.1.3. The download is the file <code>Unmarked-0.1.3.apk</code> on the release page, which also lists its SHA-256 checksum.</p>
+
+<h2>Install it</h2>
+<ol>
+  <li>Download the <code>.apk</code> file from the release page.</li>
+  <li>Open it. Android asks you to allow your browser or file manager to <b>install unknown apps</b>: allow it for this one install.</li>
+  <li>Open Unmarked. It asks for no permissions: you choose each file yourself, or share files to it from another app.</li>
+</ol>
+<p class="muted">Updates install over the old version. Prefer not to install anything? <a href="https://unmarked.anonacondacodelab.com/">Use the web app</a> in Chrome or Chromium.</p>
+
+<h2>Check that it's the official build</h2>
+<p>This is the official download. Copies elsewhere are allowed by the licence, so check any APK before installing it:</p>
+<ul>
+  <li><b>Checksum:</b> compare the file's SHA-256 with the one on the release page. On a computer: <code>sha256sum Unmarked-0.1.3.apk</code> (Linux, macOS: <code>shasum -a 256</code>, Windows: <code>certutil -hashfile Unmarked-0.1.3.apk SHA256</code>).</li>
+  <li><b>Signing certificate:</b> every official build is signed with the same key (shared by all Anonaconda Code Lab apps). Apps such as AppVerifier show an installed app's certificate; it must match:</li>
+</ul>
+<span class="fp">4D:6C:EA:58:94:C0:D7:D8:E9:AB:74:BC:3A:1E:9C:A5:47:BD:40:A2:02:B6:70:99:AF:66:5B:29:7F:7A:8F:47</span>
+
+<h2>Keep it up to date</h2>
+<ul>
+  <li>In the app: <b>About → Check for updates</b> opens this page and tells you if a newer version exists.</li>
+  <li>Automatically: add <code>https://github.com/Anonaconda-CodeLab/unmarked</code> to <b>Obtainium</b>, a free app that watches GitHub releases and installs updates. Leave <b>Include prereleases</b> off: pre-releases are untested builds.</li>
+</ul>
+
+<h2>Install from a computer</h2>
+<p>With USB debugging turned on in the phone's Developer options: <code>adb install Unmarked-0.1.3.apk</code>. A one-click installer that runs in Chrome on your computer is on the way.</p>
+
+<h2>Why isn't it on Google Play?</h2>
+<p>Our apps are free, open source and collect nothing. Publishing on Google Play means registering with Google, handing over government ID and paying a fee. Google is now extending that identity check beyond its own store: since 30 September 2026, apps from participating app stores in Brazil, Indonesia, Singapore and Thailand must come from developers verified by Google, and Google plans to require this for all apps on certified Android phones worldwide from 2027.</p>
+<p>We believe you should be able to install software you choose on a phone you own, without asking Google's permission, so we support <a href="https://keepandroidopen.org">Keep Android Open</a> and distribute directly instead. If your phone one day refuses an app from an unverified developer, Android's <b>advanced flow</b> (in Developer options; a one-time 24-hour wait) or an install from a computer still works.</p>
+
+<footer>
+  <p>Unmarked is free software under the GNU General Public License v3 or later, with no warranty. <a href="https://github.com/Anonaconda-CodeLab/unmarked">Source code</a> · Questions or problems: <a href="mailto:hello@anonacondacodelab.com">hello@anonacondacodelab.com</a></p>
+</footer>
+</main>
+<script>
+(function () {
+  var latest = '0.1.3', m = /[?&]v=(\d+\.\d+\.\d+)\b/.exec(location.search), el = document.getElementById('status');
+  if (!m) return;
+  var a = m[1].split('.').map(Number), b = latest.split('.').map(Number), cmp = 0;
+  for (var i = 0; i < 3 && !cmp; i++) cmp = a[i] - b[i];
+  el.hidden = false;
+  if (cmp >= 0) { el.className = 'banner ok'; el.textContent = 'You have the latest version (' + m[1] + ').'; }
+  else { el.className = 'banner new'; el.textContent = 'Version ' + latest + ' is available. You have ' + m[1] + '. Download it below; it installs over your current version.'; }
+})();
+</script>
+</body></html>

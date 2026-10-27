@@ -1,0 +1,10 @@
+{
+  "appId": "com.anonacondacodelab.unmarked",
+  "appName": "Unmarked",
+  "webDir": "../dist",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  }
+}
