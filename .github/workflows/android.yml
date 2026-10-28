@@ -68,7 +68,7 @@ jobs:
         with:
           name: unsigned-apk
           path: unsigned.apk
-          retention-days: 1
+          retention-days: 30   # the sign job can wait up to 30 days for approval; it needs this APK when it runs
 
   sign:
     needs: build
@@ -99,7 +99,7 @@ jobs:
             exit 1
           fi
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          umask 077; echo "$KS" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/studio.jks"
+          umask 077; echo "$KS" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/studio.jks"
           "$BT/zipalign" -c -p 4 unsigned.apk >/dev/null 2>&1 || { "$BT/zipalign" -f -p 4 unsigned.apk aligned.apk && mv aligned.apk unsigned.apk; }
           "$BT/apksigner" sign --ks "$RUNNER_TEMP/studio.jks" --ks-key-alias leadone --ks-pass env:KS_PASS --key-pass env:KS_PASS \
             --out "Unmarked-$VER.apk" unsigned.apk
