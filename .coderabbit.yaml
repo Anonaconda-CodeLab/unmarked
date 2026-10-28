@@ -1,0 +1,75 @@
+# CodeRabbit settings for Unmarked: reviews pull requests into main (the same shape as Rounds' settings)
+language: en-GB
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+  # built output, vendored pdf-lib, fonts, binary test files and Android tooling: not our code, or generated from it
+  # (the scripts that make the test files, tests/fixtures/*.py and *.sh, are still reviewed)
+  path_filters:
+    - "!dist/**"
+    - "!src/vendor/**"
+    - "!src/fonts/**"
+    - "!tests/fixtures/**/*.jpg"
+    - "!tests/fixtures/**/*.png"
+    - "!tests/fixtures/**/*.webp"
+    - "!tests/fixtures/**/*.pdf"
+    - "!mobile/package-lock.json"
+    - "!mobile/android/gradle/**"
+    - "!mobile/android/gradlew"
+    - "!mobile/android/gradlew.bat"
+    - "!mobile/android/app/src/main/res/mipmap-*/**"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.woff2"
+  path_instructions:
+    - path: "**"
+      instructions: |
+        Unmarked removes hidden data (metadata) from photos (JPEG, PNG, WebP) and PDFs, entirely on the device. By
+        design it has no network access: the page's Content Security Policy has connect-src 'none', and the Android
+        app has no INTERNET permission. Nothing is uploaded or stored apart from three option settings and a usage
+        count. Every input file is hostile. Focus on: hidden data that could survive cleaning while the app reports
+        "nothing else found"; untrusted text reaching the page unescaped; parsing that could crash, hang or run out of
+        memory on a crafted file; and anything that could send data off the device.
+    - path: "src/clean.js"
+      instructions: |
+        The cleaner, also reused by the studio's Flatbed app. Images are cleaned by a keep-list: only picture and
+        display data is copied, byte for byte (no recompression). Check that every kind of metadata that is kept is
+        either harmless or blanked (colour profiles), that every finding the cleaner removes is really gone from the
+        clean copy, and that bounds, sizes and lengths from the file are checked before use. Text scans must run in
+        a single pass (no backtracking patterns on file text) and compressed data is unpacked only up to 64 MB. PDFs
+        are rebuilt with pdf-lib keeping only reachable objects; check signatures, XFA, scripts, submit actions,
+        attachments and comments are handled as the options say.
+    - path: "src/app.js"
+      instructions: |
+        File names and everything found in files are untrusted: they must never reach innerHTML without escaping.
+        The summary must never say a file is clean when something removable is left.
+    - path: "src/native.js"
+      instructions: |
+        Bridge to the Android app (reading picked or shared files in pieces, saving, sharing). Check size limits
+        are applied before reading, and error handling.
+    - path: "mobile/**/*.java"
+      instructions: |
+        Android plugin: check intent handling (only content:// files from other apps are accepted), that files are
+        written only where the person chose in the save screen, what is exported, and that nothing needs or uses
+        internet access.
+    - path: "build.mjs"
+      instructions: |
+        Builds the single-file page and its HTTP headers. Check the Content Security Policy and headers stay strict
+        and that nothing external is loaded.
+    - path: "tests/**"
+      instructions: |
+        Tests run on real test files. Check that each test would actually fail if the behaviour it describes broke
+        (for example, searching a PDF's raw bytes can miss text inside compressed object streams).
+    - path: ".github/workflows/**"
+      instructions: |
+        Release pipeline using the studio's signing key. Three jobs: build (read-only, unsigned APK, no secrets),
+        sign (read-only, runs no repository code, in the protected "signing" environment that holds the key and
+        needs the owner's approval), publish (the only job with contents: write). Actions are pinned to exact
+        commits. Check secret handling, permissions and supply-chain risks.
